@@ -532,6 +532,7 @@ defmodule RxGeneratorWeb.CoreComponents do
             placeholder="Type shorthand (e.g. napa xtra 1+0+1 5d pc)..."
             phx-keyup="parse_and_suggest"
             phx-debounce="50"
+            phx-hook="Omnibar"
             class="w-full bg-transparent border-0 p-0 text-zinc-900 placeholder:text-zinc-400 text-lg font-medium focus:outline-none focus:ring-0"
           />
           <kbd class="hidden sm:inline-block px-2 py-1 text-xs font-semibold text-zinc-500 bg-zinc-100 border border-zinc-200 rounded-md">
@@ -539,6 +540,43 @@ defmodule RxGeneratorWeb.CoreComponents do
           </kbd>
         </div>
       </form>
+
+      <%= if @candidates != [] do %>
+        <div
+          id="omnibar-dropdown"
+          class="absolute left-0 right-0 mt-2 z-50 bg-white rounded-xl shadow-2xl border border-zinc-200 overflow-hidden divide-y divide-zinc-100 animate-in fade-in duration-100"
+        >
+          <div
+            :for={{candidate, idx} <- Enum.with_index(@candidates)}
+            id={"candidate-#{idx}"}
+            class={[
+              "px-4 py-2.5 flex items-center justify-between cursor-pointer transition-colors",
+              idx == @highlighted_index && "bg-zinc-100 font-medium text-zinc-900",
+              idx != @highlighted_index && "hover:bg-zinc-50 text-zinc-700"
+            ]}
+          >
+            <div>
+              <span class="font-bold text-zinc-900">{candidate.brand_name}</span>
+              <span class="text-xs text-zinc-500 ml-2">({candidate.generic_name})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full border border-zinc-200">
+                {candidate.dosage_form} &bull; {candidate.strength}
+              </span>
+              <%= if idx == @highlighted_index do %>
+                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:inline">
+                  Tab ⇥
+                </span>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="px-4 py-1.5 bg-zinc-50 text-[11px] text-zinc-400 flex items-center justify-between">
+            <span>↑↓ to navigate &bull; Tab to complete &bull; Esc to dismiss</span>
+            <span>Local DGDA Snapshot</span>
+          </div>
+        </div>
+      <% end %>
 
       <%= if @error do %>
         <div class="mt-2 text-sm text-amber-600 font-medium flex items-center gap-1.5">

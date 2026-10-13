@@ -76,16 +76,16 @@
 
 ### Tests for User Story 3 (Strict Red-First TDD) 🔴
 
-- [ ] T023 [P] [US3] Create LiveView test in `test/rx_generator_web/live/prescription_live_test.exs` testing suggestion dropdown rendering on `parse_and_suggest`, navigation via `navigate_suggestions`, and Escape dismissal, and verify it fails (Red)
-- [ ] T024 [P] [US3] Create LiveView test in `test/rx_generator_web/live/prescription_live_test.exs` asserting `Tab` key autocomplete event pushes `set_omnibar_value` without committing to canvas, and verify it fails (Red)
+- [x] T023 [P] [US3] Create LiveView test in `test/rx_generator_web/live/prescription_live_test.exs` testing suggestion dropdown rendering on `parse_and_suggest`, navigation via `navigate_suggestions`, and Escape dismissal, and verify it fails (Red)
+- [x] T024 [P] [US3] Create LiveView test in `test/rx_generator_web/live/prescription_live_test.exs` asserting `Tab` key autocomplete event pushes `set_omnibar_value` without committing to canvas, and verify it fails (Red)
 
 ### Implementation for User Story 3 🟢
 
-- [ ] T025 [P] [US3] Create JavaScript hook `assets/js/hooks/omnibar.js` handling keyboard events: if dropdown is visible and candidate is highlighted, Enter commits candidate; if no candidate highlighted or dropdown hidden, allows native `phx-submit="commit_omnibar"` to propagate cleanly; handles `ArrowDown`, `ArrowUp`, `Tab`, `Escape`
-- [ ] T026 [US3] Register `Omnibar` hook in `assets/js/app.js`
-- [ ] T027 [US3] Implement `handle_event("parse_and_suggest", %{"query" => query}, socket)` in `lib/rx_generator_web/live/prescription_live.ex` querying `Formulary.Search` and updating `:candidates` and `:highlighted_index`
-- [ ] T028 [US3] Implement `handle_event("navigate_suggestions", %{"direction" => dir}, socket)` in `lib/rx_generator_web/live/prescription_live.ex` updating highlighted suggestion index
-- [ ] T029 [US3] Implement candidate dropdown markup with active highlight states in `<.omnibar>` component in `lib/rx_generator_web/components/core_components.ex`
+- [x] T025 [P] [US3] Create JavaScript hook `assets/js/hooks/omnibar.js` handling keyboard events: if dropdown is visible and candidate is highlighted, Enter commits candidate; if no candidate highlighted or dropdown hidden, allows native `phx-submit="commit_omnibar"` to propagate cleanly; handles `ArrowDown`, `ArrowUp`, `Tab`, `Escape`
+- [x] T026 [US3] Register `Omnibar` hook in `assets/js/app.js`
+- [x] T027 [US3] Implement `handle_event("parse_and_suggest", %{"query" => query}, socket)` in `lib/rx_generator_web/live/prescription_live.ex` querying `Formulary.Search` and updating `:candidates` and `:highlighted_index`
+- [x] T028 [US3] Implement `handle_event("navigate_suggestions", %{"direction" => dir}, socket)` in `lib/rx_generator_web/live/prescription_live.ex` updating highlighted suggestion index
+- [x] T029 [US3] Implement candidate dropdown markup with active highlight states in `<.omnibar>` component in `lib/rx_generator_web/components/core_components.ex`
 
 **Checkpoint**: Autocomplete dropdown and full keyboard navigation operate seamlessly under 15ms latency without event collision.
 

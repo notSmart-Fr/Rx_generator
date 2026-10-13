@@ -41,15 +41,87 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   end
 
   @impl true
-  def handle_event("parse_and_suggest", %{"query" => query}, socket) do
+  def handle_event("parse_and_suggest", params, socket) do
+    query = params["query"] || params["value"] || ""
     trimmed = String.trim(query)
 
     if trimmed == "" do
-      {:noreply, assign(socket, query: query, candidates: [], error: nil)}
+      {:noreply, assign(socket, query: query, candidates: [], highlighted_index: 0, error: nil)}
     else
       parsed = ShorthandParser.parse(trimmed)
-      candidates = if parsed.drug_query != "", do: Search.run(parsed.drug_query, limit: 5), else: []
-      {:noreply, assign(socket, query: query, candidates: candidates, error: nil)}
+      candidates = if parsed && parsed.drug_query != "", do: Search.run(parsed.drug_query, limit: 5), else: []
+      {:noreply, assign(socket, query: query, candidates: candidates, highlighted_index: 0, error: nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("navigate_suggestions", %{"direction" => direction}, socket) do
+    count = length(socket.assigns.candidates)
+
+    if count == 0 do
+      {:noreply, socket}
+    else
+      current = socket.assigns.highlighted_index
+
+      new_index =
+        case direction do
+          "down" -> rem(current + 1, count)
+          "up" -> if current - 1 < 0, do: count - 1, else: current - 1
+        end
+
+      {:noreply, assign(socket, highlighted_index: new_index)}
+    end
+  end
+
+  @impl true
+  def handle_event("recall_last_item", _params, socket) do
+    case socket.assigns.items do
+      [] ->
+        {:noreply, socket}
+
+      items ->
+        last_item = List.last(items)
+        remaining = Enum.slice(items, 0..-2//1)
+
+        # Reconstruct shorthand representation for recalled item
+        recalled_text =
+          [
+            last_item.brand_name_snapshot,
+            last_item.dosage_matrix != "as_directed" && last_item.dosage_matrix,
+            last_item.duration_expression != "as_needed" && last_item.duration_expression,
+            last_item.timing_instruction
+          ]
+          |> Enum.filter(& &1)
+          |> Enum.join(" ")
+
+        {:noreply,
+         socket
+         |> assign(items: remaining, query: recalled_text, error: nil)
+         |> push_event("set_omnibar_value", %{value: recalled_text})}
+    end
+  end
+
+  @impl true
+  def handle_event("dismiss_suggestions", _params, socket) do
+    {:noreply, assign(socket, candidates: [], highlighted_index: 0)}
+  end
+
+  @impl true
+  def handle_event("autocomplete_candidate", _params, socket) do
+    candidates = socket.assigns.candidates
+    index = socket.assigns.highlighted_index
+
+    case Enum.at(candidates, index) do
+      nil ->
+        {:noreply, socket}
+
+      candidate ->
+        # Autocomplete candidate brand name and strength into the omnibar
+        new_val = "#{candidate.brand_name} "
+        {:noreply,
+         socket
+         |> assign(query: new_val, candidates: [], highlighted_index: 0)
+         |> push_event("set_omnibar_value", %{value: new_val})}
     end
   end
 
