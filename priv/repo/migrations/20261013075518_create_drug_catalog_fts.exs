@@ -47,4 +47,3 @@ defmodule RxGenerator.Repo.Migrations.CreateDrugCatalogFts do
     execute "DROP TABLE IF EXISTS drug_catalog_fts;"
   end
 end
-

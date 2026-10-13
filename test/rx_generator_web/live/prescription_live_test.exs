@@ -44,7 +44,8 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
       refute has_element?(view, "#rx-item-0")
     end
 
-    test "refuses to commit unknown drug without hallucinating and displays warning (Article I)", %{conn: conn} do
+    test "refuses to commit unknown drug without hallucinating and displays warning (Article I)",
+         %{conn: conn} do
       {:ok, view, _html} = live(conn, "/prescriptions/new")
 
       view
@@ -57,7 +58,9 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
   end
 
   describe "User Story 2: High Court Mandate & Bengali Formatting" do
-    test "renders active generic in bold uppercase and canonical Bengali directions", %{conn: conn} do
+    test "renders active generic in bold uppercase and canonical Bengali directions", %{
+      conn: conn
+    } do
       {:ok, view, _html} = live(conn, "/prescriptions/new")
 
       view
@@ -77,7 +80,9 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
   end
 
   describe "User Story 3: Keyboard Navigation & Dropdown Disambiguation" do
-    test "renders suggestions on keyup and supports arrow navigation and escape dismissal", %{conn: conn} do
+    test "renders suggestions on keyup and supports arrow navigation and escape dismissal", %{
+      conn: conn
+    } do
       {:ok, view, _html} = live(conn, "/prescriptions/new")
 
       element(view, "#prescription-omnibar")
@@ -157,4 +162,3 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
     end
   end
 end
-

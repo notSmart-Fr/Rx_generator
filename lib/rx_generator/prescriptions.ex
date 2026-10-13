@@ -14,4 +14,3 @@ defmodule RxGenerator.Prescriptions do
     end
   end
 end
-

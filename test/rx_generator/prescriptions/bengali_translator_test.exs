@@ -29,11 +29,13 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorTest do
     end
 
     test "translates fractional dosages accurately (pediatric & split doses)" do
-      assert BengaliTranslator.to_canonical("1/2+0+1/2", "3 days", :pc) == "১/২+০+১/২ — ভরা পেটে — ৩ দিন"
+      assert BengaliTranslator.to_canonical("1/2+0+1/2", "3 days", :pc) ==
+               "১/২+০+১/২ — ভরা পেটে — ৩ দিন"
     end
 
     test "handles clinical default fallbacks safely without guessing" do
-      assert BengaliTranslator.to_canonical(:as_directed, :as_needed, nil) == "চিকিৎসকের পরামর্শ অনুযায়ী — প্রয়োজনমতো"
+      assert BengaliTranslator.to_canonical(:as_directed, :as_needed, nil) ==
+               "চিকিৎসকের পরামর্শ অনুযায়ী — প্রয়োজনমতো"
     end
   end
 
@@ -62,4 +64,3 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorTest do
     end
   end
 end
-

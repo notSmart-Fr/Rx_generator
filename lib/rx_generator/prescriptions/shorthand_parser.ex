@@ -85,6 +85,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
   end
 
   defp extract_form_prefix([]), do: {nil, []}
+
   defp extract_form_prefix([first | rest] = tokens) do
     case Map.get(@form_prefixes, String.downcase(first)) do
       nil -> {nil, tokens}
@@ -109,6 +110,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
   end
 
   defp extract_timing([]), do: {nil, []}
+
   defp extract_timing(tokens) do
     last_token = List.last(tokens) |> String.downcase()
 
@@ -122,6 +124,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
   end
 
   defp extract_duration([]), do: {nil, []}
+
   defp extract_duration(tokens) do
     last_token = List.last(tokens) |> String.downcase()
 
@@ -144,6 +147,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
   end
 
   defp extract_dosage_matrix([]), do: {nil, []}
+
   defp extract_dosage_matrix(tokens) do
     last_token = List.last(tokens)
 
@@ -155,7 +159,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
 
       # Two-token measure (e.g. "1 tsp", "2 drops", "1 puff")
       length(tokens) >= 2 and
-          String.downcase(last_token) in ["tsp", "drops", "drop", "puff", "puffs"] and
+        String.downcase(last_token) in ["tsp", "drops", "drop", "puff", "puffs"] and
           Regex.match?(~r/^\d+(?:\/\d+)?$/, Enum.at(tokens, -2)) ->
         num = Enum.at(tokens, -2)
         measure = "#{num} #{last_token}"
@@ -170,4 +174,3 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
     end
   end
 end
-

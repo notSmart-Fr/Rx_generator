@@ -93,4 +93,3 @@ defmodule RxGenerator.Formulary.DrugCatalogItem do
     identity :unique_dgda_product, [:brand_name, :strength, :dosage_form]
   end
 end
-

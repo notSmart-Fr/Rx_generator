@@ -77,6 +77,7 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   Translates a timing token atom or string into Bengali.
   """
   def translate_timing(nil), do: nil
+
   def translate_timing(code) when is_atom(code) or is_binary(code) do
     Map.get(@timing_map, code)
   end
@@ -87,6 +88,7 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   def translate_duration(nil), do: nil
   def translate_duration(:as_needed), do: "প্রয়োজনমতো"
   def translate_duration("as needed"), do: "প্রয়োজনমতো"
+
   def translate_duration(expr) when is_binary(expr) do
     trimmed = String.trim(expr)
 
@@ -117,9 +119,11 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   def translate_dosage(nil), do: nil
   def translate_dosage(:as_directed), do: "চিকিৎসকের পরামর্শ অনুযায়ী"
   def translate_dosage("as directed"), do: "চিকিৎসকের পরামর্শ অনুযায়ী"
+
   def translate_dosage(matrix) when is_binary(matrix) do
     to_bengali_numerals(matrix)
   end
+
   def translate_dosage(_), do: nil
 
   @doc """
@@ -130,6 +134,6 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
       Map.get(@bengali_digits, digit, digit)
     end)
   end
+
   def to_bengali_numerals(other), do: to_string(other)
 end
-

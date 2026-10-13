@@ -519,7 +519,8 @@ defmodule RxGeneratorWeb.CoreComponents do
         <div class={[
           "flex items-center rounded-xl bg-white shadow-lg border px-4 py-3 transition-all",
           @error && "border-amber-500 ring-2 ring-amber-200",
-          !@error && "border-zinc-300 focus-within:border-zinc-800 focus-within:ring-2 focus-within:ring-zinc-400"
+          !@error &&
+            "border-zinc-300 focus-within:border-zinc-800 focus-within:ring-2 focus-within:ring-zinc-400"
         ]}>
           <.icon name="hero-magnifying-glass" class="w-6 h-6 text-zinc-400 mr-3" />
           <input
@@ -596,11 +597,16 @@ defmodule RxGeneratorWeb.CoreComponents do
 
   def prescription_canvas(assigns) do
     ~H"""
-    <div id={@id} class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-[400px]">
+    <div
+      id={@id}
+      class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-[400px]"
+    >
       <div class="border-b border-zinc-200 pb-4 mb-6 flex justify-between items-center">
         <div>
           <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
-          <p class="text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">Clinical Order Record</p>
+          <p class="text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
+            Clinical Order Record
+          </p>
         </div>
         <div class="text-right text-xs text-zinc-400">
           Edge-Native Air-Gapped Engine
@@ -612,10 +618,16 @@ defmodule RxGeneratorWeb.CoreComponents do
           <div class="text-center py-16 text-zinc-400 border-2 border-dashed border-zinc-200 rounded-xl">
             <.icon name="hero-document-text" class="w-10 h-10 mx-auto mb-2 text-zinc-300" />
             <p class="text-sm font-medium">No medications added yet.</p>
-            <p class="text-xs mt-1">Use the omnibar above to enter medications via keyboard shorthand.</p>
+            <p class="text-xs mt-1">
+              Use the omnibar above to enter medications via keyboard shorthand.
+            </p>
           </div>
         <% else %>
-          <div :for={{item, index} <- Enum.with_index(@items)} id={"rx-item-#{index}"} class="p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
+          <div
+            :for={{item, index} <- Enum.with_index(@items)}
+            id={"rx-item-#{index}"}
+            class="p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors"
+          >
             <div class="flex items-baseline justify-between">
               <div>
                 <span class="text-xs font-bold text-zinc-400 mr-2">{index + 1}.</span>
@@ -661,4 +673,3 @@ defmodule RxGeneratorWeb.CoreComponents do
     """
   end
 end
-

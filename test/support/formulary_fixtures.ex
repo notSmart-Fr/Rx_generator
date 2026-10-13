@@ -138,4 +138,3 @@ defmodule RxGenerator.Test.FormularyFixtures do
     :ok
   end
 end
-

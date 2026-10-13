@@ -115,10 +115,10 @@
 
 **Purpose**: Handle edge cases (unknown brand warnings, backspace recall, empty submits) and run verification.
 
-- [ ] T034 [P] Implement `handle_event("recall_last_item", ...)` in `lib/rx_generator_web/live/prescription_live.ex` popping the last canvas item back into the omnibar on Backspace
-- [ ] T035 Implement unknown drug warning state (amber border + `"Drug not found in DGDA catalog"` notice) in `lib/rx_generator_web/live/prescription_live.ex`
-- [ ] T036 [P] Execute full test suite `mix test` and verify 100% green status across all unit and LiveView tests
-- [ ] T037 Run `mix precommit` and resolve any code style, unused variable, or formatting warnings
+- [x] T034 [P] Implement `handle_event("recall_last_item", ...)` in `lib/rx_generator_web/live/prescription_live.ex` popping the last canvas item back into the omnibar on Backspace
+- [x] T035 Implement unknown drug warning state (amber border + `"Drug not found in DGDA catalog"` notice) in `lib/rx_generator_web/live/prescription_live.ex`
+- [x] T036 [P] Execute full test suite `mix test` and verify 100% green status across all unit and LiveView tests
+- [x] T037 Run `mix precommit` and resolve any code style, unused variable, or formatting warnings
 
 ---
 

@@ -47,4 +47,3 @@ defmodule RxGenerator.Prescriptions.Prescription do
     end
   end
 end
-

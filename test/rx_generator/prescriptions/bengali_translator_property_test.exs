@@ -9,9 +9,11 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorPropertyTest do
   @valid_durations ["1 day", "5 days", "7 days", "2 weeks", "1 month", :as_needed, nil]
 
   property "to_canonical/3 enforces delimiter and numeral invariants across all combinations" do
-    check all dose <- StreamData.member_of(@valid_doses),
-              timing <- StreamData.member_of(@valid_timings),
-              duration <- StreamData.member_of(@valid_durations) do
+    check all(
+            dose <- StreamData.member_of(@valid_doses),
+            timing <- StreamData.member_of(@valid_timings),
+            duration <- StreamData.member_of(@valid_durations)
+          ) do
       result = BengaliTranslator.to_canonical(dose, duration, timing)
 
       # 1. Output is always binary
@@ -27,4 +29,3 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorPropertyTest do
     end
   end
 end
-

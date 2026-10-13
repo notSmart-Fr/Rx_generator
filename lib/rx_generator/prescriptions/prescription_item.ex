@@ -88,4 +88,3 @@ defmodule RxGenerator.Prescriptions.PrescriptionItem do
     update_timestamp :updated_at
   end
 end
-

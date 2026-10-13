@@ -80,4 +80,3 @@ defmodule RxGenerator.Prescriptions.ShorthandParserTest do
     end
   end
 end
-

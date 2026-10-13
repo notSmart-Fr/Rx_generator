@@ -100,4 +100,3 @@ defmodule RxGenerator.Formulary.Search do
     end
   end
 end
-

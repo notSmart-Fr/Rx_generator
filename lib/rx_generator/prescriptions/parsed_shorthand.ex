@@ -15,4 +15,3 @@ defmodule RxGenerator.Prescriptions.ParsedShorthand do
     :special_instruction
   ]
 end
-

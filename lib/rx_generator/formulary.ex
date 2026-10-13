@@ -4,10 +4,12 @@ defmodule RxGenerator.Formulary do
 
   resources do
     resource RxGenerator.Formulary.DrugCatalogItem do
-      define :create_drug, action: :create, args: [:brand_name, :generic_name, :strength, :dosage_form, :manufacturer]
+      define :create_drug,
+        action: :create,
+        args: [:brand_name, :generic_name, :strength, :dosage_form, :manufacturer]
+
       define :list_drugs, action: :read
       define :get_drug_by_id, action: :by_id, args: [:id]
     end
   end
 end
-

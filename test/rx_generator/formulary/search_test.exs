@@ -57,7 +57,9 @@ defmodule RxGenerator.Formulary.SearchTest do
       results = Search.run("ciprocin 250")
       assert length(results) >= 1
 
-      matched_item = Enum.find(results, &(&1.brand_name == "Ciprocin" and &1.strength == "250 mg"))
+      matched_item =
+        Enum.find(results, &(&1.brand_name == "Ciprocin" and &1.strength == "250 mg"))
+
       assert matched_item != nil
     end
 
@@ -97,5 +99,3 @@ defmodule RxGenerator.Formulary.SearchTest do
     end
   end
 end
-
-

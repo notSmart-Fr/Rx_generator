@@ -49,8 +49,14 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       {:noreply, assign(socket, query: query, candidates: [], highlighted_index: 0, error: nil)}
     else
       parsed = ShorthandParser.parse(trimmed)
-      candidates = if parsed && parsed.drug_query != "", do: Search.run(parsed.drug_query, limit: 5), else: []
-      {:noreply, assign(socket, query: query, candidates: candidates, highlighted_index: 0, error: nil)}
+
+      candidates =
+        if parsed && parsed.drug_query != "",
+          do: Search.run(parsed.drug_query, limit: 5),
+          else: []
+
+      {:noreply,
+       assign(socket, query: query, candidates: candidates, highlighted_index: 0, error: nil)}
     end
   end
 
@@ -118,6 +124,7 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       candidate ->
         # Autocomplete candidate brand name and strength into the omnibar
         new_val = "#{candidate.brand_name} "
+
         {:noreply,
          socket
          |> assign(query: new_val, candidates: [], highlighted_index: 0)
@@ -182,4 +189,3 @@ defmodule RxGeneratorWeb.PrescriptionLive do
     end
   end
 end
-
