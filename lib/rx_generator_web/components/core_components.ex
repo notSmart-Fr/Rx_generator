@@ -593,15 +593,27 @@ defmodule RxGeneratorWeb.CoreComponents do
               </span>
             </div>
 
-            <div class="mt-2.5 flex items-center gap-3 text-sm font-semibold text-emerald-800">
-              <span class="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
-                {item.dosage_matrix}
-              </span>
-              <span>&bull;</span>
-              <span>{item.duration_expression}</span>
-              <%= if item.timing_instruction do %>
-                <span>&bull;</span>
-                <span class="text-zinc-600 font-medium">({item.timing_instruction})</span>
+            <div class="mt-3 flex flex-wrap items-baseline gap-3">
+              <%= if item.canonical_bengali_text do %>
+                <span class="text-base font-bold text-emerald-800 tracking-wide">
+                  {item.canonical_bengali_text}
+                </span>
+              <% else %>
+                <span class="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-sm font-semibold text-emerald-800">
+                  {item.dosage_matrix}
+                </span>
+                <span class="text-zinc-400">&bull;</span>
+                <span class="text-sm font-semibold text-emerald-800">{item.duration_expression}</span>
+                <%= if item.timing_instruction do %>
+                  <span class="text-zinc-400">&bull;</span>
+                  <span class="text-zinc-600 font-medium text-sm">({item.timing_instruction})</span>
+                <% end %>
+              <% end %>
+
+              <%= if item.bengali_breakdown_text do %>
+                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
+                  {item.bengali_breakdown_text}
+                </span>
               <% end %>
             </div>
           </div>

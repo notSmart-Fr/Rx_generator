@@ -65,6 +65,18 @@ defmodule RxGeneratorWeb.PrescriptionLive do
 
       case candidates do
         [drug | _] ->
+          canonical_bengali =
+            RxGenerator.Prescriptions.BengaliTranslator.to_canonical(
+              parsed.dosage_matrix,
+              parsed.duration_expression,
+              parsed.timing_code
+            )
+
+          bengali_breakdown =
+            RxGenerator.Prescriptions.BengaliTranslator.to_breakdown(
+              to_string(parsed.dosage_matrix)
+            )
+
           item = %PrescriptionItem{
             id: Ash.UUID.generate(),
             drug_catalog_item_id: drug.id,
@@ -75,8 +87,8 @@ defmodule RxGeneratorWeb.PrescriptionLive do
             dosage_matrix: to_string(parsed.dosage_matrix),
             duration_expression: to_string(parsed.duration_expression),
             timing_instruction: parsed.timing_code && to_string(parsed.timing_code),
-            canonical_bengali_text: nil,
-            bengali_breakdown_text: nil,
+            canonical_bengali_text: canonical_bengali,
+            bengali_breakdown_text: bengali_breakdown,
             display_order: length(socket.assigns.items)
           }
 

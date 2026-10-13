@@ -55,14 +55,14 @@
 
 ### Tests for User Story 2 (Strict Red-First TDD) 🔴
 
-- [ ] T018 [P] [US2] Create unit test in `test/rx_generator/prescriptions/bengali_translator_test.exs` asserting translation of `1+0+1`, `5d`, `pc` to canonical string `"১+০+১ — ভরা পেটে — ৫ দিন"` and explanatory subtext `"সকাল ১, দুপুর ০, রাত ১"`, and verify it fails (Red)
-- [ ] T019 [P] [US2] Create LiveView test assertion in `test/rx_generator_web/live/prescription_live_test.exs` asserting rendered generic molecule name matches `PARACETAMOL + CAFFEINE` with uppercase typography classes and Bengali directions, and verify it fails (Red)
+- [x] T018 [P] [US2] Create unit test in `test/rx_generator/prescriptions/bengali_translator_test.exs` asserting translation of `1+0+1`, `5d`, `pc` to canonical string `"১+০+১ — ভরা পেটে — ৫ দিন"` and explanatory subtext `"সকাল ১, দুপুর ০, রাত ১"`, and verify it fails (Red)
+- [x] T019 [P] [US2] Create LiveView test assertion in `test/rx_generator_web/live/prescription_live_test.exs` asserting rendered generic molecule name matches `PARACETAMOL + CAFFEINE` with uppercase typography classes and Bengali directions, and verify it fails (Red)
 
 ### Implementation for User Story 2 🟢
 
-- [ ] T020 [US2] Implement `RxGenerator.Prescriptions.BengaliTranslator` in `lib/rx_generator/prescriptions/bengali_translator.ex` mapping English numerals to Bengali digits (`০-৯`), timings (`pc` → `"ভরা পেটে"`, `ac` → `"খাবারের আগে"`, `hs` → `"ঘুমানোর আগে"`), and durations (`5d` → `"৫ দিন"`)
-- [ ] T021 [US2] Integrate `BengaliTranslator.to_canonical/3` into `PrescriptionLive` item generation pipeline in `lib/rx_generator_web/live/prescription_live.ex`
-- [ ] T022 [US2] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` applying High Court bold uppercase typography (`text-lg font-black uppercase text-zinc-900`) for generic name and emerald styling for canonical Bengali text
+- [x] T020 [US2] Implement `RxGenerator.Prescriptions.BengaliTranslator` in `lib/rx_generator/prescriptions/bengali_translator.ex` mapping English numerals to Bengali digits (`০-৯`), timings (`pc` → `"ভরা পেটে"`, `ac` → `"খাবারের আগে"`, `hs` → `"ঘুমানোর আগে"`), and durations (`5d` → `"৫ দিন"`)
+- [x] T021 [US2] Integrate `BengaliTranslator.to_canonical/3` into `PrescriptionLive` item generation pipeline in `lib/rx_generator_web/live/prescription_live.ex`
+- [x] T022 [US2] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` applying High Court bold uppercase typography (`text-lg font-black uppercase text-zinc-900`) for generic name and emerald styling for canonical Bengali text
 
 **Checkpoint**: User Stories 1 AND 2 pass all tests and satisfy High Court legal and linguistic mandates.
 
