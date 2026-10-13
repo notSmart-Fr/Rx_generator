@@ -18,6 +18,7 @@ defmodule RxGeneratorWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/prescriptions/new", PrescriptionLive
   end
 
   # Other scopes may use custom stacks.

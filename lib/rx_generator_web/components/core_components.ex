@@ -502,4 +502,113 @@ defmodule RxGeneratorWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Renders the keyboard-driven prescription omnibar.
+  """
+  attr :id, :string, default: "prescription-omnibar"
+  attr :query, :string, default: ""
+  attr :error, :string, default: nil
+  attr :candidates, :list, default: []
+  attr :highlighted_index, :integer, default: 0
+
+  def omnibar(assigns) do
+    ~H"""
+    <div class="relative w-full max-w-3xl mx-auto my-6">
+      <form id="omnibar-form" phx-submit="commit_omnibar" class="relative">
+        <div class={[
+          "flex items-center rounded-xl bg-white shadow-lg border px-4 py-3 transition-all",
+          @error && "border-amber-500 ring-2 ring-amber-200",
+          !@error && "border-zinc-300 focus-within:border-zinc-800 focus-within:ring-2 focus-within:ring-zinc-400"
+        ]}>
+          <.icon name="hero-magnifying-glass" class="w-6 h-6 text-zinc-400 mr-3" />
+          <input
+            id={@id}
+            name="query"
+            type="text"
+            value={@query}
+            autofocus
+            autocomplete="off"
+            placeholder="Type shorthand (e.g. napa xtra 1+0+1 5d pc)..."
+            phx-keyup="parse_and_suggest"
+            phx-debounce="50"
+            class="w-full bg-transparent border-0 p-0 text-zinc-900 placeholder:text-zinc-400 text-lg font-medium focus:outline-none focus:ring-0"
+          />
+          <kbd class="hidden sm:inline-block px-2 py-1 text-xs font-semibold text-zinc-500 bg-zinc-100 border border-zinc-200 rounded-md">
+            Enter ↵
+          </kbd>
+        </div>
+      </form>
+
+      <%= if @error do %>
+        <div class="mt-2 text-sm text-amber-600 font-medium flex items-center gap-1.5">
+          <.icon name="hero-exclamation-triangle" class="w-4 h-4 text-amber-600" />
+          {@error}
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the prescription canvas displaying medication items.
+  """
+  attr :id, :string, default: "prescription-canvas"
+  attr :items, :list, default: []
+
+  def prescription_canvas(assigns) do
+    ~H"""
+    <div id={@id} class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-[400px]">
+      <div class="border-b border-zinc-200 pb-4 mb-6 flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
+          <p class="text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">Clinical Order Record</p>
+        </div>
+        <div class="text-right text-xs text-zinc-400">
+          Edge-Native Air-Gapped Engine
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <%= if @items == [] do %>
+          <div class="text-center py-16 text-zinc-400 border-2 border-dashed border-zinc-200 rounded-xl">
+            <.icon name="hero-document-text" class="w-10 h-10 mx-auto mb-2 text-zinc-300" />
+            <p class="text-sm font-medium">No medications added yet.</p>
+            <p class="text-xs mt-1">Use the omnibar above to enter medications via keyboard shorthand.</p>
+          </div>
+        <% else %>
+          <div :for={{item, index} <- Enum.with_index(@items)} id={"rx-item-#{index}"} class="p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
+            <div class="flex items-baseline justify-between">
+              <div>
+                <span class="text-xs font-bold text-zinc-400 mr-2">{index + 1}.</span>
+                <span class="text-lg font-black uppercase tracking-wide text-zinc-900">
+                  {String.upcase(item.generic_name_snapshot)}
+                </span>
+                <span class="ml-2 text-sm font-semibold text-zinc-600">
+                  ({item.brand_name_snapshot})
+                </span>
+              </div>
+              <span class="text-xs font-medium text-zinc-500 bg-zinc-200/70 px-2.5 py-0.5 rounded-full">
+                {item.dosage_form_snapshot} &bull; {item.strength_snapshot}
+              </span>
+            </div>
+
+            <div class="mt-2.5 flex items-center gap-3 text-sm font-semibold text-emerald-800">
+              <span class="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                {item.dosage_matrix}
+              </span>
+              <span>&bull;</span>
+              <span>{item.duration_expression}</span>
+              <%= if item.timing_instruction do %>
+                <span>&bull;</span>
+                <span class="text-zinc-600 font-medium">({item.timing_instruction})</span>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    """
+  end
 end
+

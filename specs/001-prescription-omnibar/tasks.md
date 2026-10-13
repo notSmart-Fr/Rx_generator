@@ -29,19 +29,19 @@
 
 ### Tests for User Story 1 (Strict Red-First TDD) 🔴
 
-- [ ] T008 [P] [US1] Create unit test in `test/rx_generator/prescriptions/shorthand_parser_test.exs` asserting parsing of `napa xtra 1+0+1 5d pc` into drug query, dosage matrix (`1+0+1`), duration (`5 days`), and timing (`:pc`), and verify it fails (Red)
-- [ ] T009 [P] [US1] Create LiveView behavioral test in `test/rx_generator_web/live/prescription_live_test.exs` asserting fast-path Enter commit of `napa xtra 1+0+1 5d pc` renders canvas item and clears omnibar, and verify it fails (Red)
+- [X] T008 [P] [US1] Create unit test in `test/rx_generator/prescriptions/shorthand_parser_test.exs` asserting parsing of `napa xtra 1+0+1 5d pc` into drug query, dosage matrix (`1+0+1`), duration (`5 days`), and timing (`:pc`), and verify it fails (Red)
+- [X] T009 [P] [US1] Create LiveView behavioral test in `test/rx_generator_web/live/prescription_live_test.exs` asserting fast-path Enter commit of `napa xtra 1+0+1 5d pc` renders canvas item and clears omnibar, and verify it fails (Red)
 
 ### Implementation for User Story 1 🟢
 
-- [ ] T010 [P] [US1] Define `RxGenerator.Prescriptions.ParsedShorthand` struct in `lib/rx_generator/prescriptions/parsed_shorthand.ex` with keys: `:raw_input`, `:drug_query`, `:strength_hint`, `:dosage_matrix`, `:duration_expression`, `:timing_code`, `:special_instruction`
-- [ ] T011 [US1] Implement right-to-left DFA parser in `lib/rx_generator/prescriptions/shorthand_parser.ex` isolating timing, duration, dosage matrix, and drug query, defaulting unstated frequency to `:as_directed` and duration to `:as_needed`
-- [ ] T012 [P] [US1] Create `RxGenerator.Prescriptions.PrescriptionItem` Ash resource in `lib/rx_generator/prescriptions/prescription_item.ex` with snapshot fields (`brand_name_snapshot`, `generic_name_snapshot`, `dosage_form_snapshot`, `strength_snapshot`, `dosage_matrix`, `duration_expression`, `timing_instruction`, `canonical_bengali_text`)
-- [ ] T013 [P] [US1] Create `RxGenerator.Prescriptions.Prescription` Ash resource in `lib/rx_generator/prescriptions/prescription.ex` in `:draft` state with `has_many :items, RxGenerator.Prescriptions.PrescriptionItem`
-- [ ] T014 [US1] Configure `RxGenerator.Prescriptions` Ash domain in `lib/rx_generator/prescriptions.ex` registering `Prescription` and `PrescriptionItem`
-- [ ] T015 [US1] Implement omnibar input component `<.omnibar>` and canvas component `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex`
-- [ ] T016 [US1] Implement `RxGeneratorWeb.PrescriptionLive` in `lib/rx_generator_web/live/prescription_live.ex` with `mount/3`, `handle_event("commit_omnibar", ...)` fast-path resolving drug via `Formulary.Search` and appending item to socket assigns
-- [ ] T017 [US1] Add `/prescriptions/new` live route in `lib/rx_generator_web/router.ex`
+- [X] T010 [P] [US1] Define `RxGenerator.Prescriptions.ParsedShorthand` struct in `lib/rx_generator/prescriptions/parsed_shorthand.ex` with keys: `:raw_input`, `:drug_query`, `:strength_hint`, `:dosage_matrix`, `:duration_expression`, `:timing_code`, `:special_instruction`
+- [X] T011 [US1] Implement right-to-left DFA parser in `lib/rx_generator/prescriptions/shorthand_parser.ex` isolating timing, duration, dosage matrix, and drug query, defaulting unstated frequency to `:as_directed` and duration to `:as_needed`
+- [X] T012 [P] [US1] Create `RxGenerator.Prescriptions.PrescriptionItem` Ash resource in `lib/rx_generator/prescriptions/prescription_item.ex` with snapshot fields (`brand_name_snapshot`, `generic_name_snapshot`, `dosage_form_snapshot`, `strength_snapshot`, `dosage_matrix`, `duration_expression`, `timing_instruction`, `canonical_bengali_text`)
+- [X] T013 [P] [US1] Create `RxGenerator.Prescriptions.Prescription` Ash resource in `lib/rx_generator/prescriptions/prescription.ex` in `:draft` state with `has_many :items, RxGenerator.Prescriptions.PrescriptionItem`
+- [X] T014 [US1] Configure `RxGenerator.Prescriptions` Ash domain in `lib/rx_generator/prescriptions.ex` registering `Prescription` and `PrescriptionItem`
+- [X] T015 [US1] Implement omnibar input component `<.omnibar>` and canvas component `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex`
+- [X] T016 [US1] Implement `RxGeneratorWeb.PrescriptionLive` in `lib/rx_generator_web/live/prescription_live.ex` with `mount/3`, `handle_event("commit_omnibar", ...)` fast-path resolving drug via `Formulary.Search` and appending item to socket assigns
+- [X] T017 [US1] Add `/prescriptions/new` live route in `lib/rx_generator_web/router.ex`
 
 **Checkpoint**: At this point, User Story 1 (MVP) is fully functional and testable end-to-end via keyboard input.
 
