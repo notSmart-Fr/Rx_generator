@@ -1,19 +1,10 @@
 <!--
 Sync Impact Report:
-- Version change: Unratified Draft (1.0.0-template) → 1.0.0
+- Version change: 1.0.0 → 1.1.0
 - List of modified principles:
-  - [PRINCIPLE_1_NAME] → Article I — Zero Hallucination Boundary
-  - [PRINCIPLE_2_NAME] → Article II — High Court Generic Mandate
-  - [PRINCIPLE_3_NAME] → Article III — The Human-in-the-Loop (HITL) Absolute
-  - [PRINCIPLE_4_NAME] → Article IV — Controlled Substances Lockout
-  - [PRINCIPLE_5_NAME] → Article V — Zero-Cloud Edge Autonomy
-- Added sections:
-  - Core Principles (Articles I through V)
-  - Architectural & Runtime Constraints (Articles VI and VII)
-  - Data Privacy & Cryptographic Immutability (Articles VIII, IX, and X)
-  - Behavior-Driven & Test-Driven Development (BDD / TDD Invariants)
-- Removed sections:
-  - Generic template placeholder text
+  - Behavior-Driven & Test-Driven Development (BDD / TDD) → Strengthened with strict Red-First gate (tests MUST be executed and observed failing before writing production code)
+- Added sections: None
+- Removed sections: None
 - Follow-up TODOs: None
 -->
 
@@ -82,11 +73,19 @@ Printed prescriptions MUST embed an offline-verifiable SHA-256 or asymmetric dig
 
 ## Behavior-Driven & Test-Driven Development (BDD / TDD)
 
-### Test-First Implementation Invariant (NON-NEGOTIABLE)
-All clinical business rules, validation gates, interaction verifications, and state machine transitions MUST follow strict Test-Driven Development (TDD):
-1. **Test Specification**: Feature specifications must be defined in executable behavioral tests (`Phoenix.LiveViewTest`, `ExUnit`, and Ash resource action tests) before implementing production logic.
-2. **Red-Green-Refactor**: Tests must fail first, demonstrating the absence or boundary violation of the invariant, before the minimal compliant implementation is written.
-3. **Clinical Invariant Regression Gate**: Every Pull Request and commit must pass automated checks confirming Articles I through X cannot be bypassed. Specifically:
+### Strict Test-First Protocol (NON-NEGOTIABLE)
+All clinical business logic, validation rules, interaction safety gates, and state machine transitions MUST strictly follow this non-negotiable sequence:
+
+1. **Write Behavior Test First**: 
+   Before any production code is drafted or altered, executable behavioral specifications MUST be written (`Phoenix.LiveViewTest`, `ExUnit`, Ash resource action tests). Tests must clearly express the clinical invariant or feature contract.
+2. **Execute & Verify Red (Must Fail First)**:
+   The test suite for the new specification MUST be executed against the codebase and explicitly observed to fail (Red). Writing implementation code prior to observing a failing test is a strict violation of this invariant. The test failure must specifically be due to the missing behavior or safety assertion, not due to syntax or compilation errors.
+3. **Write Minimal Implementation (Green)**:
+   Only once the test has failed as expected may production code be written—implementing only the minimal logic required to make the failing test pass.
+4. **Refactor & Precommit Gate**:
+   Refactor code for clarity and maintainability while keeping all tests passing. The full test suite and `mix precommit` must pass cleanly.
+5. **Clinical Invariant Regression Gate**:
+   Every Pull Request and commit must pass automated test suites asserting that Articles I through X cannot be bypassed:
    - Attempting to bypass the DGDA primary key foreign key relation in a prescription item fails unit tests.
    - Attempting to update or delete an item on a `:locked` prescription raises an immutable transition error.
    - Prescribing a Class-A narcotic via an unverified or telemedicine actor raises a forbidden validation error.
@@ -99,4 +98,4 @@ All clinical business rules, validation gates, interaction verifications, and st
 2. **Amendment Procedure**: Amendments require formal RFC documentation, clinical safety justification, migration impact analysis, and explicit sign-off from clinical and technical stewards.
 3. **Compliance Review**: All Pull Requests and automated builds must execute `mix precommit` and verification test suites to prove adherence to these constitutional invariants.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-13
+**Version**: 1.1.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-13
