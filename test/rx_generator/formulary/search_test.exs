@@ -1,6 +1,8 @@
 defmodule RxGenerator.Formulary.SearchTest do
   use RxGenerator.DataCase, async: false
 
+  @compile {:no_warn_undefined, RxGenerator.Test.FormularyFixtures}
+
   alias RxGenerator.Formulary.Search
   alias RxGenerator.Test.FormularyFixtures
 
