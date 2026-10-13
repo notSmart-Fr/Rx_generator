@@ -99,13 +99,13 @@
 
 ### Tests for User Story 4 (Strict Red-First TDD) 🔴
 
-- [ ] T030 [P] [US4] Add edge-case tests in `test/rx_generator/prescriptions/shorthand_parser_test.exs` asserting strength preservation for `ciprocin 500 1+0+1 5d` (`500` preserved in drug query, `5d` extracted as duration) and `syrup tofen 100ml 1 tsp tds 7d`, and verify it fails (Red)
-- [ ] T031 [P] [US4] Add test in `test/rx_generator/formulary/search_test.exs` verifying `Search.run/2` correctly matches combined `brand_name + strength` attributes when strength tokens (`500`, `100ml`) are present, and verify it fails (Red)
+- [x] T030 [P] [US4] Add edge-case tests in `test/rx_generator/prescriptions/shorthand_parser_test.exs` asserting strength preservation for `ciprocin 500 1+0+1 5d` (`500` preserved in drug query, `5d` extracted as duration) and `syrup tofen 100ml 1 tsp tds 7d`, and verify it fails (Red)
+- [x] T031 [P] [US4] Add test in `test/rx_generator/formulary/search_test.exs` verifying `Search.run/2` correctly matches combined `brand_name + strength` attributes when strength tokens (`500`, `100ml`) are present, and verify it fails (Red)
 
 ### Implementation for User Story 4 🟢
 
-- [ ] T032 [US4] Update `RxGenerator.Prescriptions.ShorthandParser` in `lib/rx_generator/prescriptions/shorthand_parser.ex` with strength indicator token guards (`mg`, `ml`, `mcg`, `g`, `iu`, `%`, `mg/5ml`) preventing number stripping
-- [ ] T033 [US4] Update `RxGenerator.Formulary.Search.run/2` in `lib/rx_generator/formulary/search.ex` to search both brand title and `brand_name + strength` attributes when strength hints are extracted
+- [x] T032 [US4] Update `RxGenerator.Prescriptions.ShorthandParser` in `lib/rx_generator/prescriptions/shorthand_parser.ex` with strength indicator token guards (`mg`, `ml`, `mcg`, `g`, `iu`, `%`, `mg/5ml`) preventing number stripping
+- [x] T033 [US4] Update `RxGenerator.Formulary.Search.run/2` in `lib/rx_generator/formulary/search.ex` to search both brand title and `brand_name + strength` attributes when strength hints are extracted
 
 **Checkpoint**: Pharmacological strength indicators are 100% protected against parser collisions.
 

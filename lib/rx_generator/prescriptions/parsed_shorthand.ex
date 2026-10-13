@@ -7,6 +7,7 @@ defmodule RxGenerator.Prescriptions.ParsedShorthand do
   defstruct [
     :raw_input,
     :drug_query,
+    :dosage_form_hint,
     :strength_hint,
     :dosage_matrix,
     :duration_expression,

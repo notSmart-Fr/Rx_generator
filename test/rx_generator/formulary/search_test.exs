@@ -67,6 +67,25 @@ defmodule RxGenerator.Formulary.SearchTest do
     end
   end
 
+  describe "run/2 clinical boundaries & options" do
+    test "matches by generic active molecule name" do
+      results = Search.run("paracetamol")
+      assert length(results) >= 1
+      assert Enum.all?(results, &(&1.generic_name =~ "Paracetamol"))
+    end
+
+    test "respects configurable limit option" do
+      assert length(Search.run("napa", limit: 1)) == 1
+      assert length(Search.run("napa", limit: 3)) == 3
+    end
+
+    test "correctly loads regulated narcotic flag (Article IV)" do
+      results = Search.run("rivotril")
+      assert length(results) >= 1
+      assert hd(results).is_controlled == true
+    end
+  end
+
   describe "run/2 safety boundaries (Article I)" do
     test "returns empty list on unknown drug with zero hallucinations" do
       assert Search.run("nonexistentmedicationxyz") == []
