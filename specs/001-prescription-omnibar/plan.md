@@ -11,8 +11,8 @@ Build a single-line, keyboard-driven Phoenix LiveView prescription omnibar. Clin
 ## Technical Context
 
 **Language/Version**: Elixir 1.20.4, Erlang/OTP 29
-**Primary Dependencies**: Ash Framework 3.0, AshPhoenix 2.0, AshSqlite 0.2, AshStateMachine 0.2, Phoenix LiveView 1.2, Tailwind CSS (v4 import format), Cinder 0.17
-**Storage**: SQLite3 with SQLite FTS5 (`ecto_sqlite3` / `ash_sqlite`)
+**Primary Dependencies**: Ash Framework 3.0, AshPhoenix 2.0, AshSqlite 0.2, Phoenix LiveView 1.2, Tailwind CSS (v4 pure CSS import format in `app.css`), Cinder 0.17
+**Storage**: SQLite3 with SQLite FTS5 virtual tables (`ecto_sqlite3` / `ash_sqlite`)
 **Testing**: ExUnit, `Phoenix.LiveViewTest`, `LazyHTML`
 **Target Platform**: Edge local PC / air-gapped clinic hardware (Windows / Linux)
 **Project Type**: Phoenix LiveView Web Application
@@ -20,21 +20,19 @@ Build a single-line, keyboard-driven Phoenix LiveView prescription omnibar. Clin
 **Constraints**: Fully air-gapped (zero cloud network calls), zero npm runtime dependencies, memory overhead <250MB
 **Scale/Scope**: Outpatient clinical consultation, ~30,000 DGDA drug SKUs locally indexed
 
-## Constitution Check
+## Constitution Check (Scoped to Spec 01)
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-- **Article I (Zero Hallucination)**: PASS. All drug entries resolve deterministically to exact primary keys in local DGDA SQLite snapshot. No generative models generate pharmacology.
-- **Article II (High Court Generic Mandate)**: PASS. Canvas renders active generic in uppercase typography (`String.upcase/1`) with equal/greater prominence than commercial brands.
-- **Article III (HITL Absolute)**: PASS. Physician explicitly controls and confirms all additions.
-- **Article IV (Controlled Substances)**: PASS. Narcotics Flag on catalog enforces validation guard.
-- **Article V (Zero-Cloud Edge Autonomy)**: PASS. All parsing, FTS5 searching, and translation run 100% locally.
-- **Article VI (Memory & Latency SLA)**: PASS. Pure Elixir token lexer + SQLite FTS5 yields <5ms query time and well under 250MB RAM.
-- **Article VII (Lexing & Strength Invariance)**: PASS. Right-to-left DFA lexer protects strength numbers (`mg`, `ml`, `mcg`) from being stripped as duration/frequency.
-- **Article VIII (Encryption-at-Rest)**: PASS. PHI fields encrypted via Cloak AES-GCM; public catalog left unencrypted for FTS5 scanning.
-- **Article IX (State Machine Invariance)**: PASS. Prescriptions managed via `AshStateMachine` (`:draft` to `:locked`), soft deletion via `AshArchival`.
-- **Article X (Ed25519 Offline Signing)**: PASS. Detached digital signatures generated for offline QR code verification.
-- **Agentic Modification Fence**: PASS. Zero new unauthorized Hex packages or database adapter changes.
+- **Article I (Zero Hallucination)**: PASS. Resolves strictly against local DGDA SQLite snapshot primary keys. No generative models generate pharmacology.
+- **Article II (High Court Generic Mandate)**: PASS. Canvas renders `String.upcase(generic_name)` with equal/greater prominence than commercial brands.
+- **Article III (HITL Absolute)**: PASS. Physician explicitly controls and confirms all additions via keyboard (`Enter`).
+- **Article IV (Controlled Substances)**: PASS. Narcotic flag check embedded in Ash validation pipeline.
+- **Article V (Zero-Cloud Edge Autonomy)**: PASS. All regex/DFA lexing, FTS5 matching, and translations run 100% locally.
+- **Article VI (Memory & Latency SLA)**: PASS. FTS5 queries benchmarked <2ms; socket DOM patches <15ms.
+- **Article VII (Lexing & Strength Invariance)**: PASS. Right-to-left DFA lexer isolates dose/duration while protecting strength indicators (`mg`, `ml`, `mcg`).
+- **Article VIII (Encryption-at-Rest)**: DEFERRED TO SPEC 02 (Draft canvas operates in-memory; persistent PHI encryption activated in persistence/profile spec).
+- **Article IX (State Machine Invariance)**: SCOPED. Spec 01 implements active draft staging; final immutable locking (`:locked`) deferred to Print Spec.
+- **Article X (Ed25519 Offline Signing)**: DEFERRED TO SPEC 03 (QR code and PDF signature generation deferred to Print Spec).
+- **Agentic Modification Fence**: PASS. Strictly adheres to Ash, AshSqlite, and Phoenix dependencies without new Hex packages or DB adapter swaps.
 
 ## Project Structure
 
@@ -59,9 +57,9 @@ lib/
 ├── rx_generator/
 │   ├── formulary/
 │   │   ├── drug_catalog_item.ex     # Ash resource for DGDA snapshot
-│   │   └── search.ex                # SQLite FTS5 trigram queries
+│   │   └── search.ex                # Raw SQLite FTS5 trigram queries via Ecto
 │   ├── prescriptions/
-│   │   ├── prescription.ex          # Ash resource with AshStateMachine
+│   │   ├── prescription.ex          # Ash resource (draft state)
 │   │   ├── prescription_item.ex     # Ash resource for canvas line items
 │   │   ├── shorthand_parser.ex      # DFA token stream lexer
 │   │   ├── parsed_shorthand.ex      # Token struct
@@ -75,6 +73,10 @@ lib/
 │   │   └── prescription_live.ex     # Omnibar keyboard LiveView
 │   └── router.ex
 test/
+├── support/
+│   ├── formulary_fixtures.ex        # In-memory / seeded 10-drug test catalog
+│   ├── conn_case.ex
+│   └── data_case.ex
 ├── rx_generator/
 │   ├── formulary/
 │   │   └── search_test.exs
