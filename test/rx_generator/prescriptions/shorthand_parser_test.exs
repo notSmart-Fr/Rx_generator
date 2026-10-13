@@ -4,7 +4,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParserTest do
   alias RxGenerator.Prescriptions.ShorthandParser
   alias RxGenerator.Prescriptions.ParsedShorthand
 
-  describe "parse/1 shorthand parser" do
+  describe "parse/1 happy path & token extraction" do
     test "correctly parses full standard shorthand: napa xtra 1+0+1 5d pc" do
       result = ShorthandParser.parse("napa xtra 1+0+1 5d pc")
 
@@ -15,7 +15,7 @@ defmodule RxGenerator.Prescriptions.ShorthandParserTest do
       assert result.timing_code == :pc
     end
 
-    test "handles unstated frequency and duration safely as directed/needed without guessing" do
+    test "handles unstated frequency and duration safely without guessing" do
       result = ShorthandParser.parse("azithrocin 500")
 
       assert %ParsedShorthand{} = result
@@ -23,6 +23,37 @@ defmodule RxGenerator.Prescriptions.ShorthandParserTest do
       assert result.dosage_matrix == :as_directed
       assert result.duration_expression == :as_needed
       assert result.timing_code == nil
+    end
+  end
+
+  describe "parse/1 pharmacological strength preservation (Article VII)" do
+    test "preserves multi-digit strength in drug query without confusing with duration" do
+      result = ShorthandParser.parse("ciprocin 500 1+0+1 5d")
+
+      assert result.drug_query == "ciprocin 500"
+      assert result.dosage_matrix == "1+0+1"
+      assert result.duration_expression == "5 days"
+    end
+
+    test "preserves volume and complex liquid strength indications" do
+      result = ShorthandParser.parse("tofen 100ml 1 tsp 7d")
+
+      assert result.drug_query == "tofen 100ml 1 tsp"
+      assert result.duration_expression == "7 days"
+    end
+  end
+
+  describe "parse/1 parser resilience" do
+    test "handles hyphen-delimited dosage matrix" do
+      result = ShorthandParser.parse("napa 1-0-1 3d")
+
+      assert result.dosage_matrix in ["1-0-1", "1+0+1"]
+      assert result.duration_expression == "3 days"
+    end
+
+    test "handles empty or whitespace-only inputs without crashing" do
+      assert ShorthandParser.parse("") == nil
+      assert ShorthandParser.parse("   ") == nil
     end
   end
 end

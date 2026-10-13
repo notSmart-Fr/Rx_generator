@@ -17,27 +17,32 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
   }
 
   @doc """
-  Parses a raw shorthand string (e.g. "napa xtra 1+0+1 5d pc") into a %ParsedShorthand{}.
+  Parses a raw shorthand string (e.g. "napa xtra 1+0+1 5d pc") into a %ParsedShorthand{} or nil if empty.
   """
   def parse(raw_input) when is_binary(raw_input) do
     trimmed = String.trim(raw_input)
-    tokens = String.split(trimmed, ~r/\s+/, trim: true)
 
-    {timing_code, remaining_after_timing} = extract_timing(tokens)
-    {duration_expr, remaining_after_duration} = extract_duration(remaining_after_timing)
-    {dosage_matrix, remaining_after_dosage} = extract_dosage_matrix(remaining_after_duration)
+    if trimmed == "" do
+      nil
+    else
+      tokens = String.split(trimmed, ~r/\s+/, trim: true)
 
-    drug_query = Enum.join(remaining_after_dosage, " ")
+      {timing_code, remaining_after_timing} = extract_timing(tokens)
+      {duration_expr, remaining_after_duration} = extract_duration(remaining_after_timing)
+      {dosage_matrix, remaining_after_dosage} = extract_dosage_matrix(remaining_after_duration)
 
-    %ParsedShorthand{
-      raw_input: trimmed,
-      drug_query: drug_query,
-      strength_hint: nil,
-      dosage_matrix: dosage_matrix || :as_directed,
-      duration_expression: duration_expr || :as_needed,
-      timing_code: timing_code,
-      special_instruction: nil
-    }
+      drug_query = Enum.join(remaining_after_dosage, " ")
+
+      %ParsedShorthand{
+        raw_input: trimmed,
+        drug_query: drug_query,
+        strength_hint: nil,
+        dosage_matrix: dosage_matrix || :as_directed,
+        duration_expression: duration_expr || :as_needed,
+        timing_code: timing_code,
+        special_instruction: nil
+      }
+    end
   end
 
   defp extract_timing([]), do: {nil, []}
@@ -79,8 +84,10 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
   defp extract_dosage_matrix(tokens) do
     last_token = List.last(tokens)
 
-    if Regex.match?(~r/^\d+(?:\/\d+)?(?:\+\d+(?:\/\d+)?)+$/, last_token) do
-      {last_token, Enum.slice(tokens, 0..-2//1)}
+    if Regex.match?(~r/^\d+(?:\/\d+)?(?:[\+\-]\d+(?:\/\d+)?)+$/, last_token) do
+      # Normalize - to +
+      normalized = String.replace(last_token, "-", "+")
+      {normalized, Enum.slice(tokens, 0..-2//1)}
     else
       {nil, tokens}
     end

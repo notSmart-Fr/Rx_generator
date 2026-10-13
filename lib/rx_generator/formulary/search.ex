@@ -7,36 +7,36 @@ defmodule RxGenerator.Formulary.Search do
   alias RxGenerator.Formulary.DrugCatalogItem
   alias RxGenerator.Repo
 
+  @unit_stop_words ~w(ml mg gm iu cc ts mcg)
+
   @doc """
   Searches `drug_catalog_fts` with a query string and optional limit.
   Returns a list of `DrugCatalogItem` structs ordered by match relevance.
   """
   def run(query, opts \\ []) when is_binary(query) do
-    sanitized = sanitize_fts5_query(query)
     limit = Keyword.get(opts, :limit, 10)
 
-    if sanitized == "" do
-      []
-    else
-      match_expression = build_match_expression(sanitized)
+    case build_match_expression(query) do
+      nil ->
+        []
 
-      sql = """
-      SELECT rowid
-      FROM drug_catalog_fts
-      WHERE drug_catalog_fts MATCH ?
-      ORDER BY rank
-      LIMIT ?
-      """
+      match_expression ->
+        sql = """
+        SELECT rowid
+        FROM drug_catalog_fts
+        WHERE drug_catalog_fts MATCH ?
+        ORDER BY rank
+        LIMIT ?
+        """
 
-      case Ecto.Adapters.SQL.query(Repo, sql, [match_expression, limit]) do
-        {:ok, %{rows: rows}} ->
-          rowids = Enum.map(rows, fn [id] -> id end)
-          load_items_by_rowids(rowids)
+        case Ecto.Adapters.SQL.query(Repo, sql, [match_expression, limit]) do
+          {:ok, %{rows: rows}} ->
+            rowids = Enum.map(rows, fn [id] -> id end)
+            load_items_by_rowids(rowids)
 
-        {:error, _err} ->
-          # Fallback to simple sanitized search or empty on malformed queries
-          []
-      end
+          {:error, _err} ->
+            []
+        end
     end
   end
 
@@ -44,7 +44,7 @@ defmodule RxGenerator.Formulary.Search do
 
   defp load_items_by_rowids(rowids) do
     # Fetch records and preserve the FTS5 rank order
-    placeholders = Enum.map(1..length(rowids), fn i -> "$#{i}" end) |> Enum.join(", ")
+    placeholders = Enum.map(rowids, fn _ -> "?" end) |> Enum.join(", ")
 
     sql = """
     SELECT id FROM drug_catalog WHERE rowid IN (#{placeholders})
@@ -68,24 +68,36 @@ defmodule RxGenerator.Formulary.Search do
     end
   end
 
-  defp sanitize_fts5_query(query) do
-    query
-    |> String.trim()
-    |> String.replace(~r/[^\w\s]/u, "")
-    |> String.trim()
-  end
+  @doc """
+  Constructs a safe SQLite FTS5 trigram match query from an input string.
+  Tokens under 3 characters (or unit abbreviations like 'ml') are omitted
+  because the trigram tokenizer requires tokens with length >= 3.
+  """
+  def build_match_expression(raw_query) when is_binary(raw_query) do
+    raw_query
+    |> String.downcase()
+    # Normalize complex formulations like 100ml -> "100 ml"
+    |> String.replace(~r/(\d+)([a-zA-Z]+)/, "\\1 \\2")
+    # Clean FTS5 reserved syntax characters
+    |> String.replace(~r/[*^"':()\-+]/, " ")
+    |> String.split(~s{ }, trim: true)
+    # Reject tokens shorter than 3 characters and known unit stop words
+    |> Enum.reject(fn token ->
+      String.length(token) < 3 or token in @unit_stop_words
+    end)
+    |> case do
+      [] ->
+        nil
 
-  defp build_match_expression(sanitized) do
-    # For FTS5 with trigram tokenizer, wrap terms or query with quotes for substring matching
-    tokens =
-      sanitized
-      |> String.split(~r/\s+/, trim: true)
-      |> Enum.map(fn token ->
-        escaped = String.replace(token, "\"", "\"\"")
-        "\"#{escaped}\""
-      end)
-
-    Enum.join(tokens, " AND ")
+      valid_tokens ->
+        # Wrap tokens in quotes to prevent FTS5 operator collisions
+        valid_tokens
+        |> Enum.map(fn token ->
+          escaped = String.replace(token, "\"", "\"\"")
+          "\"#{escaped}\""
+        end)
+        |> Enum.join(" AND ")
+    end
   end
 end
 
