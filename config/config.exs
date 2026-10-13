@@ -59,6 +59,7 @@ config :spark,
 config :rx_generator, RxGenerator.Repo, timeout: 15_000, busy_timeout: 16_000
 
 config :rx_generator,
+  ash_domains: [RxGenerator.Formulary],
   ecto_repos: [RxGenerator.Repo],
   generators: [timestamp_type: :utc_datetime]
 

@@ -9,13 +9,13 @@
 
 **Purpose**: Establish the DGDA catalog Ash resource, generate the AshSqlite migration, create the raw FTS5 virtual table, and setup the isolated test fixture.
 
-- [ ] T001 Create in-memory / seeded 10-drug test catalog fixture with FTS5 test sandbox synchronization in `test/support/formulary_fixtures.ex`
-- [ ] T002 Create `RxGenerator.Formulary.DrugCatalogItem` Ash resource in `lib/rx_generator/formulary/drug_catalog_item.ex` with attributes: `id` (:uuid), `brand_name` (:string, required), `generic_name` (:string, required), `strength` (:string, required), `dosage_form` (:string, required), `manufacturer` (:string, required), `is_controlled` (:boolean, default: false)
-- [ ] T003 Configure `RxGenerator.Formulary` Ash domain registering `DrugCatalogItem` in `lib/rx_generator/formulary.ex` and generate Ash migration via `mix ash.codegen create_drug_catalog`
-- [ ] T004 Create raw SQLite migration for FTS5 trigram virtual table `drug_catalog_fts` and sync triggers in `priv/repo/migrations/20261013000002_create_drug_catalog_fts.exs`
-- [ ] T005 Populate sample DGDA records (Napa, Napa Extra, Ciprocin 500, Tofen Syrup, Azithrocin 500) in `priv/repo/seeds.exs`
-- [ ] T006 Create `test/rx_generator/formulary/search_test.exs` verifying FTS5 brand and `brand_name + strength` query matching against `FormularyFixtures`
-- [ ] T007 Implement `RxGenerator.Formulary.Search.run/2` in `lib/rx_generator/formulary/search.ex` executing `Ecto.Adapters.SQL.query!` against `drug_catalog_fts` and filtering Ash query `DrugCatalogItem`
+- [X] T001 Create in-memory / seeded 10-drug test catalog fixture with FTS5 test sandbox synchronization in `test/support/formulary_fixtures.ex`
+- [X] T002 Create `RxGenerator.Formulary.DrugCatalogItem` Ash resource in `lib/rx_generator/formulary/drug_catalog_item.ex` with attributes: `id` (:uuid), `brand_name` (:string, required), `generic_name` (:string, required), `strength` (:string, required), `dosage_form` (:string, required), `manufacturer` (:string, required), `is_controlled` (:boolean, default: false)
+- [X] T003 Configure `RxGenerator.Formulary` Ash domain registering `DrugCatalogItem` in `lib/rx_generator/formulary.ex` and generate Ash migration via `mix ash.codegen create_drug_catalog`
+- [X] T004 Create raw SQLite migration for FTS5 trigram virtual table `drug_catalog_fts` and sync triggers in `priv/repo/migrations/20261013000002_create_drug_catalog_fts.exs`
+- [X] T005 Populate sample DGDA records (Napa, Napa Extra, Ciprocin 500, Tofen Syrup, Azithrocin 500) in `priv/repo/seeds.exs`
+- [X] T006 Create `test/rx_generator/formulary/search_test.exs` verifying FTS5 brand and `brand_name + strength` query matching against `FormularyFixtures`
+- [X] T007 Implement `RxGenerator.Formulary.Search.run/2` in `lib/rx_generator/formulary/search.ex` executing `Ecto.Adapters.SQL.query!` against `drug_catalog_fts` and filtering Ash query `DrugCatalogItem`
 
 **Checkpoint**: Foundation ready — DGDA data layer and sub-2ms FTS5 trigram search tested and verified.
 
