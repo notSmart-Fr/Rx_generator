@@ -1,4 +1,7 @@
 defmodule RxGenerator.Prescriptions.PrescriptionItem do
+  @moduledoc """
+  Ash resource representing a prescribed medication line item with frozen drug snapshots and soft archival.
+  """
   use Ash.Resource,
     otp_app: :rx_generator,
     domain: RxGenerator.Prescriptions,

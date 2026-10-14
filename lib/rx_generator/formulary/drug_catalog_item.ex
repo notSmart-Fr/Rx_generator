@@ -1,4 +1,7 @@
 defmodule RxGenerator.Formulary.DrugCatalogItem do
+  @moduledoc """
+  Ash resource representing an approved pharmaceutical product in the DGDA drug catalog.
+  """
   use Ash.Resource,
     otp_app: :rx_generator,
     domain: RxGenerator.Formulary,

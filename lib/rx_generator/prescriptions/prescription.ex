@@ -1,4 +1,7 @@
 defmodule RxGenerator.Prescriptions.Prescription do
+  @moduledoc """
+  Ash resource representing a clinical prescription with state machine transitions.
+  """
   use Ash.Resource,
     otp_app: :rx_generator,
     domain: RxGenerator.Prescriptions,

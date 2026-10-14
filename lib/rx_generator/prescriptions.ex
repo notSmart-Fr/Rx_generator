@@ -1,4 +1,7 @@
 defmodule RxGenerator.Prescriptions do
+  @moduledoc """
+  Domain interface for clinical prescriptions and prescribed medication line items.
+  """
   use Ash.Domain,
     otp_app: :rx_generator
 

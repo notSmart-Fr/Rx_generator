@@ -102,28 +102,8 @@ defmodule RxGenerator.Formulary.Ingestion do
     now = DateTime.utc_now()
 
     {items_to_insert, chunk_excluded, chunk_controlled} =
-      Enum.reduce(chunk, {[], 0, 0}, fn row, {items, excluded, controlled} ->
-        case Sanitizer.sanitize_record(row) do
-          {:ok, item} ->
-            db_item = %{
-              id: Ash.UUID.generate(),
-              brand_name: item.brand_name,
-              generic_name: item.generic_name,
-              strength: item.strength,
-              dosage_form: item.dosage_form,
-              manufacturer: item.manufacturer,
-              dgda_reg_no: item.dgda_reg_no,
-              is_controlled: item.is_controlled,
-              inserted_at: now,
-              updated_at: now
-            }
-
-            ctrl_inc = if item.is_controlled, do: 1, else: 0
-            {[db_item | items], excluded, controlled + ctrl_inc}
-
-          :skip ->
-            {items, excluded + 1, controlled}
-        end
+      Enum.reduce(chunk, {[], 0, 0}, fn row, state ->
+        process_row(row, state, now)
       end)
 
     if items_to_insert != [] do
@@ -149,6 +129,33 @@ defmodule RxGenerator.Formulary.Ingestion do
           controlled: acc.controlled + chunk_controlled
       }
     end
+  end
+
+  defp process_row(row, {items, excluded, controlled}, now) do
+    case Sanitizer.sanitize_record(row) do
+      {:ok, item} ->
+        db_item = build_catalog_item(item, now)
+        ctrl_inc = if item.is_controlled, do: 1, else: 0
+        {[db_item | items], excluded, controlled + ctrl_inc}
+
+      :skip ->
+        {items, excluded + 1, controlled}
+    end
+  end
+
+  defp build_catalog_item(item, now) do
+    %{
+      id: Ash.UUID.generate(),
+      brand_name: item.brand_name,
+      generic_name: item.generic_name,
+      strength: item.strength,
+      dosage_form: item.dosage_form,
+      manufacturer: item.manufacturer,
+      dgda_reg_no: item.dgda_reg_no,
+      is_controlled: item.is_controlled,
+      inserted_at: now,
+      updated_at: now
+    }
   end
 
   defp drop_triggers do

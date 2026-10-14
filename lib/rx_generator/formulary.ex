@@ -1,4 +1,7 @@
 defmodule RxGenerator.Formulary do
+  @moduledoc """
+  Domain interface for the drug catalog formulary and pharmaceutical records.
+  """
   use Ash.Domain,
     otp_app: :rx_generator
 

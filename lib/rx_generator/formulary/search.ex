@@ -9,6 +9,38 @@ defmodule RxGenerator.Formulary.Search do
 
   @unit_stop_words ~w(ml mg gm iu cc ts mcg)
 
+  @form_aliases %{
+    "tab" => "Tablet",
+    "tablet" => "Tablet",
+    "tabs" => "Tablet",
+    "syr" => "Syrup",
+    "syrup" => "Syrup",
+    "susp" => "Syrup",
+    "suspension" => "Syrup",
+    "liquid" => "Syrup",
+    "oralliquid" => "Syrup",
+    "cap" => "Capsule",
+    "capsule" => "Capsule",
+    "caps" => "Capsule",
+    "inj" => "Injection",
+    "injection" => "Injection",
+    "injectable" => "Injection",
+    "supp" => "Suppository",
+    "suppository" => "Suppository",
+    "suppositories" => "Suppository",
+    "drop" => "Drop",
+    "drops" => "Drop",
+    "eyedrop" => "Drop",
+    "eardrop" => "Drop",
+    "cream" => "Cream",
+    "cr" => "Cream",
+    "ointment" => "Ointment",
+    "oint" => "Ointment",
+    "gel" => "Gel",
+    "inhaler" => "Inhaler",
+    "inhalation" => "Inhaler"
+  }
+
   @doc """
   Normalizes diverse clinical presentation form inputs (atoms, strings, abbreviations)
   into exact DGDA dosage forms (e.g. "Tablet", "Syrup", "Capsule", "Injection").
@@ -25,40 +57,7 @@ defmodule RxGenerator.Formulary.Search do
       |> String.downcase()
       |> String.replace(~r/[^a-z]/, "")
 
-    cond do
-      cleaned in ["tab", "tablet", "tabs"] ->
-        "Tablet"
-
-      cleaned in ["syr", "syrup", "susp", "suspension", "liquid", "oralliquid"] ->
-        "Syrup"
-
-      cleaned in ["cap", "capsule", "caps"] ->
-        "Capsule"
-
-      cleaned in ["inj", "injection", "injectable"] ->
-        "Injection"
-
-      cleaned in ["supp", "suppository", "suppositories"] ->
-        "Suppository"
-
-      cleaned in ["drop", "drops", "eyedrop", "eardrop"] ->
-        "Drop"
-
-      cleaned in ["cream", "cr"] ->
-        "Cream"
-
-      cleaned in ["ointment", "oint"] ->
-        "Ointment"
-
-      cleaned in ["gel"] ->
-        "Gel"
-
-      cleaned in ["inhaler", "inhalation"] ->
-        "Inhaler"
-
-      true ->
-        nil
-    end
+    Map.get(@form_aliases, cleaned)
   end
 
   def normalize_form(_), do: nil
@@ -76,50 +75,54 @@ defmodule RxGenerator.Formulary.Search do
     canonical_form = normalize_form(raw_form)
 
     case build_match_expression(query) do
-      nil ->
-        []
-
-      match_expression ->
-        {sql, params} =
-          if canonical_form do
-            sql_query = """
-            SELECT c.rowid
-            FROM drug_catalog_fts fts
-            JOIN drug_catalog c ON c.rowid = fts.rowid
-            WHERE drug_catalog_fts MATCH ? AND c.dosage_form = ?
-            ORDER BY rank
-            LIMIT ?
-            """
-
-            {sql_query, [match_expression, canonical_form, limit]}
-          else
-            sql_query = """
-            SELECT rowid
-            FROM drug_catalog_fts
-            WHERE drug_catalog_fts MATCH ?
-            ORDER BY rank
-            LIMIT ?
-            """
-
-            {sql_query, [match_expression, limit]}
-          end
-
-        case Ecto.Adapters.SQL.query(Repo, sql, params) do
-          {:ok, %{rows: rows}} ->
-            rowids = Enum.map(rows, fn [id] -> id end)
-            load_items_by_rowids(rowids)
-
-          {:error, _err} ->
-            []
-        end
+      nil -> []
+      expr -> execute_search(expr, canonical_form, limit)
     end
+  end
+
+  defp execute_search(match_expression, canonical_form, limit) do
+    {sql, params} = build_search_query(match_expression, canonical_form, limit)
+
+    case Ecto.Adapters.SQL.query(Repo, sql, params) do
+      {:ok, %{rows: rows}} ->
+        rowids = Enum.map(rows, fn [id] -> id end)
+        load_items_by_rowids(rowids)
+
+      {:error, _err} ->
+        []
+    end
+  end
+
+  defp build_search_query(match_expression, nil, limit) do
+    sql = """
+    SELECT rowid
+    FROM drug_catalog_fts
+    WHERE drug_catalog_fts MATCH ?
+    ORDER BY rank
+    LIMIT ?
+    """
+
+    {sql, [match_expression, limit]}
+  end
+
+  defp build_search_query(match_expression, canonical_form, limit) do
+    sql = """
+    SELECT c.rowid
+    FROM drug_catalog_fts fts
+    JOIN drug_catalog c ON c.rowid = fts.rowid
+    WHERE drug_catalog_fts MATCH ? AND c.dosage_form = ?
+    ORDER BY rank
+    LIMIT ?
+    """
+
+    {sql, [match_expression, canonical_form, limit]}
   end
 
   defp load_items_by_rowids([]), do: []
 
   defp load_items_by_rowids(rowids) do
     # Fetch records and preserve the FTS5 rank order
-    placeholders = Enum.map(rowids, fn _ -> "?" end) |> Enum.join(", ")
+    placeholders = Enum.map_join(rowids, ", ", fn _ -> "?" end)
 
     sql = """
     SELECT id FROM drug_catalog WHERE rowid IN (#{placeholders})
@@ -166,12 +169,10 @@ defmodule RxGenerator.Formulary.Search do
 
       valid_tokens ->
         # Wrap tokens in quotes to prevent FTS5 operator collisions
-        valid_tokens
-        |> Enum.map(fn token ->
+        Enum.map_join(valid_tokens, " AND ", fn token ->
           escaped = String.replace(token, "\"", "\"\"")
           "\"#{escaped}\""
         end)
-        |> Enum.join(" AND ")
     end
   end
 end

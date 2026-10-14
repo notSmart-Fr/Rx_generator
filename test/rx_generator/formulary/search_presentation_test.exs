@@ -185,7 +185,7 @@ defmodule RxGenerator.Formulary.SearchPresentationTest do
 
       # Assert latency is under 15ms (15,000 microseconds)
       assert microsec < 15_000
-      assert length(results) > 0
+      assert results != []
     end
   end
 

@@ -116,35 +116,38 @@ defmodule RxGenerator.Formulary.Ingestion.Sanitizer do
   defp try_parse_interspersed(text) do
     parts = String.split(text, ~r/\s*[\+&]\s*|\s+and\s+/i, trim: true)
 
-    # Only treat as interspersed if there are multiple parts and every part has a valid molecule + strength
     if length(parts) > 1 do
-      results =
-        Enum.map(parts, fn part ->
-          case Regex.run(@pair_regex, part) do
-            [_, molecule, strength] ->
-              trimmed_molecule = clean_text(molecule)
-              # Molecule must not be empty and must start with letters
-              if String.length(trimmed_molecule) > 0 and
-                   not Regex.match?(~r/^\d/, trimmed_molecule) do
-                {:ok, trimmed_molecule, clean_text(strength)}
-              else
-                :error
-              end
-
-            _ ->
-              :error
-          end
-        end)
-
-      if Enum.all?(results, &match?({:ok, _, _}, &1)) do
-        generics = Enum.map(results, fn {:ok, g, _} -> g end) |> Enum.join(" + ")
-        strengths = Enum.map(results, fn {:ok, _, s} -> s end) |> Enum.join(" + ")
-        {:ok, generics, strengths}
-      else
-        :error
-      end
+      parts
+      |> Enum.map(&parse_molecule_pair/1)
+      |> format_interspersed_results()
     else
       :error
+    end
+  end
+
+  defp format_interspersed_results(results) do
+    if Enum.all?(results, &match?({:ok, _, _}, &1)) do
+      generics = Enum.map_join(results, " + ", fn {:ok, g, _} -> g end)
+      strengths = Enum.map_join(results, " + ", fn {:ok, _, s} -> s end)
+      {:ok, generics, strengths}
+    else
+      :error
+    end
+  end
+
+  defp parse_molecule_pair(part) do
+    case Regex.run(@pair_regex, part) do
+      [_, molecule, strength] ->
+        trimmed_molecule = clean_text(molecule)
+
+        if String.length(trimmed_molecule) > 0 and not Regex.match?(~r/^\d/, trimmed_molecule) do
+          {:ok, trimmed_molecule, clean_text(strength)}
+        else
+          :error
+        end
+
+      _ ->
+        :error
     end
   end
 
@@ -159,8 +162,7 @@ defmodule RxGenerator.Formulary.Ingestion.Sanitizer do
     dosage_form
     |> clean_text()
     |> String.split(" ", trim: true)
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join(" ")
+    |> Enum.map_join(" ", &String.capitalize/1)
   end
 
   defp get_field(map, keys) do

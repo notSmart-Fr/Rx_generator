@@ -64,11 +64,10 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
 
     slots
     |> Enum.zip(labels)
-    |> Enum.map(fn {val, label} ->
+    |> Enum.map_join(", ", fn {val, label} ->
       bengali_val = to_bengali_numerals(val)
       "#{label} #{bengali_val}"
     end)
-    |> Enum.join(", ")
   end
 
   def to_breakdown(_), do: nil

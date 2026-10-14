@@ -31,7 +31,7 @@ defmodule RxGenerator.Formulary.SearchTest do
 
     test "matches brand partial / typo query via trigram matching" do
       results = Search.run("xtra")
-      assert length(results) >= 1
+      assert results != []
 
       # Resilient assertion against non-deterministic SQLite FTS5 row order
       assert Enum.any?(results, &(&1.brand_name == "Napa Extra"))
@@ -46,7 +46,7 @@ defmodule RxGenerator.Formulary.SearchTest do
   describe "run/2 strength matching (Article VII)" do
     test "matches concatenated brand_name and strength" do
       results = Search.run("ciprocin 500")
-      assert length(results) >= 1
+      assert results != []
 
       matched_item = Enum.find(results, &(&1.brand_name == "Ciprocin 500"))
       assert matched_item != nil
@@ -55,7 +55,7 @@ defmodule RxGenerator.Formulary.SearchTest do
 
     test "matches separate brand_name with isolated strength parameter" do
       results = Search.run("ciprocin 250")
-      assert length(results) >= 1
+      assert results != []
 
       matched_item =
         Enum.find(results, &(&1.brand_name == "Ciprocin" and &1.strength == "250 mg"))
@@ -72,7 +72,7 @@ defmodule RxGenerator.Formulary.SearchTest do
   describe "run/2 clinical boundaries & options" do
     test "matches by generic active molecule name" do
       results = Search.run("paracetamol")
-      assert length(results) >= 1
+      assert results != []
       assert Enum.all?(results, &(&1.generic_name =~ "Paracetamol"))
     end
 
@@ -83,7 +83,7 @@ defmodule RxGenerator.Formulary.SearchTest do
 
     test "correctly loads regulated narcotic flag (Article IV)" do
       results = Search.run("rivotril")
-      assert length(results) >= 1
+      assert results != []
       assert hd(results).is_controlled == true
     end
   end

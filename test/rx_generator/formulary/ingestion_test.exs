@@ -178,7 +178,7 @@ defmodule RxGenerator.Formulary.IngestionTest do
 
         # Assert FTS search works on real ingested catalog
         napa_results = Search.run("Napa")
-        assert length(napa_results) > 0
+        assert napa_results != []
       end
     end
   end

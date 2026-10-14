@@ -76,14 +76,7 @@ defmodule RxGeneratorWeb.PrescriptionLive do
     if count == 0 do
       {:noreply, socket}
     else
-      current = socket.assigns.highlighted_index
-
-      new_index =
-        case direction do
-          "down" -> rem(current + 1, count)
-          "up" -> if current - 1 < 0, do: count - 1, else: current - 1
-        end
-
+      new_index = calculate_new_index(direction, socket.assigns.highlighted_index, count)
       {:noreply, assign(socket, highlighted_index: new_index)}
     end
   end
@@ -91,33 +84,8 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   @impl true
   def handle_event("recall_last_item", _params, socket) do
     case socket.assigns.items do
-      [] ->
-        {:noreply, socket}
-
-      items ->
-        last_item = List.last(items)
-        remaining = Enum.slice(items, 0..-2//1)
-
-        # Soft-archive the removed item in SQLite
-        if last_item.id do
-          Prescriptions.remove_item(last_item.id)
-        end
-
-        # Reconstruct shorthand representation for recalled item
-        recalled_text =
-          [
-            last_item.brand_name_snapshot,
-            last_item.dosage_matrix != "as_directed" && last_item.dosage_matrix,
-            last_item.duration_expression != "as_needed" && last_item.duration_expression,
-            last_item.timing_instruction
-          ]
-          |> Enum.filter(& &1)
-          |> Enum.join(" ")
-
-        {:noreply,
-         socket
-         |> assign(items: remaining, query: recalled_text, error: nil)
-         |> push_event("set_omnibar_value", %{value: recalled_text})}
+      [] -> {:noreply, socket}
+      items -> do_recall_last_item(items, socket)
     end
   end
 
@@ -153,53 +121,87 @@ defmodule RxGeneratorWeb.PrescriptionLive do
     if trimmed == "" do
       {:noreply, socket}
     else
-      parsed = ShorthandParser.parse(trimmed)
-      candidates = Search.run(parsed.drug_query, limit: 1)
+      commit_parsed_query(trimmed, query, socket)
+    end
+  end
 
-      case candidates do
-        [drug | _] ->
-          draft = socket.assigns.draft || elem(Prescriptions.get_or_create_active_draft(), 1)
-          display_order = length(socket.assigns.items)
+  defp calculate_new_index("down", current, count), do: rem(current + 1, count)
+  defp calculate_new_index("up", 0, count), do: count - 1
+  defp calculate_new_index("up", current, _count), do: current - 1
 
-          shorthand_map = %{
-            dosage_matrix: parsed.dosage_matrix,
-            duration_expression: parsed.duration_expression,
-            timing_code: parsed.timing_code
-          }
+  defp do_recall_last_item(items, socket) do
+    last_item = List.last(items)
+    remaining = Enum.slice(items, 0..-2//1)
 
-          case Prescriptions.add_item_to_draft(draft, drug, shorthand_map, display_order) do
-            {:ok, item} ->
-              {:noreply,
-               assign(socket,
-                 draft: draft,
-                 items: socket.assigns.items ++ [item],
-                 query: "",
-                 candidates: [],
-                 error: nil
-               )}
+    if last_item.id do
+      Prescriptions.remove_item(last_item.id)
+    end
 
-            {:error, %Ash.Error.Invalid{} = _inv} ->
-              {:noreply,
-               assign(socket,
-                 error: "Cannot add duplicate drug or modify locked prescription",
-                 query: query
-               )}
+    recalled_text = reconstruct_shorthand(last_item)
 
-            {:error, _other} ->
-              {:noreply,
-               assign(socket,
-                 error: "Failed to persist prescription item",
-                 query: query
-               )}
-          end
+    {:noreply,
+     socket
+     |> assign(items: remaining, query: recalled_text, error: nil)
+     |> push_event("set_omnibar_value", %{value: recalled_text})}
+  end
 
-        [] ->
-          {:noreply,
-           assign(socket,
-             error: "Drug not found in DGDA catalog",
-             query: query
-           )}
-      end
+  defp reconstruct_shorthand(item) do
+    [
+      item.brand_name_snapshot,
+      item.dosage_matrix != "as_directed" && item.dosage_matrix,
+      item.duration_expression != "as_needed" && item.duration_expression,
+      item.timing_instruction
+    ]
+    |> Enum.filter(& &1)
+    |> Enum.join(" ")
+  end
+
+  defp commit_parsed_query(trimmed, original_query, socket) do
+    parsed = ShorthandParser.parse(trimmed)
+
+    case Search.run(parsed.drug_query, limit: 1) do
+      [drug | _] ->
+        persist_and_assign_item(drug, parsed, original_query, socket)
+
+      [] ->
+        {:noreply, assign(socket, error: "Drug not found in DGDA catalog", query: original_query)}
+    end
+  end
+
+  defp persist_and_assign_item(drug, parsed, query, socket) do
+    draft = socket.assigns.draft || elem(Prescriptions.get_or_create_active_draft(), 1)
+    display_order = length(socket.assigns.items)
+
+    shorthand_map = %{
+      dosage_matrix: parsed.dosage_matrix,
+      duration_expression: parsed.duration_expression,
+      timing_code: parsed.timing_code
+    }
+
+    case Prescriptions.add_item_to_draft(draft, drug, shorthand_map, display_order) do
+      {:ok, item} ->
+        {:noreply,
+         assign(socket,
+           draft: draft,
+           items: socket.assigns.items ++ [item],
+           query: "",
+           candidates: [],
+           error: nil
+         )}
+
+      {:error, %Ash.Error.Invalid{}} ->
+        {:noreply,
+         assign(socket,
+           error: "Cannot add duplicate drug or modify locked prescription",
+           query: query
+         )}
+
+      {:error, _other} ->
+        {:noreply,
+         assign(socket,
+           error: "Failed to persist prescription item",
+           query: query
+         )}
     end
   end
 end
