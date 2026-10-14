@@ -118,6 +118,154 @@ defmodule RxGenerator.Prescriptions.Crypto do
 
   def parse_qr_payload(_), do: {:error, :malformed_payload}
 
+  @doc """
+  Verifies a complete QR payload (`manifest#signature`), resolving the physician from the local BM&DC registry.
+  Returns `{:ok, %VerificationResult{status: :valid, ...}}` or `{:error, %VerificationResult{...}}`.
+  """
+  @spec verify_qr_payload(String.t()) ::
+          {:ok, RxGenerator.Prescriptions.VerificationResult.t()}
+          | {:error, RxGenerator.Prescriptions.VerificationResult.t()}
+  def verify_qr_payload(payload) when is_binary(payload) do
+    alias RxGenerator.Prescriptions.ProviderRegistry
+    alias RxGenerator.Prescriptions.VerificationResult
+
+    case parse_qr_payload(payload) do
+      {:ok, manifest, base64_signature} ->
+        case String.split(manifest, "|") do
+          ["v1", rx_number, bmdc_no, timestamp_str | raw_items] ->
+            timestamp =
+              case Integer.parse(timestamp_str) do
+                {ts, ""} -> ts
+                _ -> nil
+              end
+
+            case ProviderRegistry.get_provider(bmdc_no) do
+              {:ok, %{public_key: pub_key, status: :active} = provider}
+              when is_binary(pub_key) ->
+                if verify_manifest(manifest, base64_signature, pub_key) do
+                  items = Enum.map(raw_items, &parse_manifest_item/1)
+
+                  {:ok,
+                   %VerificationResult{
+                     valid?: true,
+                     status: :valid,
+                     rx_number: rx_number,
+                     prescriber_bmdc_no: bmdc_no,
+                     prescriber_name: provider[:name],
+                     timestamp: timestamp,
+                     items: items,
+                     error_message: nil
+                   }}
+                else
+                  {:error,
+                   %VerificationResult{
+                     valid?: false,
+                     status: :signature_mismatch,
+                     rx_number: rx_number,
+                     prescriber_bmdc_no: bmdc_no,
+                     prescriber_name: provider[:name],
+                     timestamp: timestamp,
+                     items: nil,
+                     error_message: "Signature mismatch: tamper detected or altered payload"
+                   }}
+                end
+
+              {:ok, %{status: status} = provider} when status != :active ->
+                {:error,
+                 %VerificationResult{
+                   valid?: false,
+                   status: :license_inactive,
+                   rx_number: rx_number,
+                   prescriber_bmdc_no: bmdc_no,
+                   prescriber_name: provider[:name],
+                   timestamp: timestamp,
+                   items: nil,
+                   error_message: "Prescriber BM&DC license is #{status} and not authorized"
+                 }}
+
+              _ ->
+                {:error,
+                 %VerificationResult{
+                   valid?: false,
+                   status: :unknown_signer,
+                   rx_number: rx_number,
+                   prescriber_bmdc_no: bmdc_no,
+                   prescriber_name: nil,
+                   timestamp: timestamp,
+                   items: nil,
+                   error_message:
+                     "Unknown signer: BM&DC #{bmdc_no} not registered in local registry"
+                 }}
+            end
+
+          _ ->
+            {:error,
+             %VerificationResult{
+               valid?: false,
+               status: :malformed_payload,
+               rx_number: nil,
+               prescriber_bmdc_no: nil,
+               prescriber_name: nil,
+               timestamp: nil,
+               items: nil,
+               error_message: "Malformed manifest structure in QR payload"
+             }}
+        end
+
+      {:error, :malformed_payload} ->
+        {:error,
+         %VerificationResult{
+           valid?: false,
+           status: :malformed_payload,
+           rx_number: nil,
+           prescriber_bmdc_no: nil,
+           prescriber_name: nil,
+           timestamp: nil,
+           items: nil,
+           error_message: "Malformed QR payload: missing '#' manifest-signature delimiter"
+         }}
+    end
+  end
+
+  def verify_qr_payload(_) do
+    alias RxGenerator.Prescriptions.VerificationResult
+
+    {:error,
+     %VerificationResult{
+       valid?: false,
+       status: :malformed_payload,
+       rx_number: nil,
+       prescriber_bmdc_no: nil,
+       prescriber_name: nil,
+       timestamp: nil,
+       items: nil,
+       error_message: "Invalid payload format: expected binary"
+     }}
+  end
+
+  defp parse_manifest_item(item_str) do
+    case String.split(item_str, ":") do
+      [short_drug_id, matrix, duration, timing] ->
+        %{
+          short_drug_id: short_drug_id,
+          dosage_matrix: matrix,
+          duration: duration,
+          timing: timing
+        }
+
+      [short_drug_id, matrix, duration] ->
+        %{
+          short_drug_id: short_drug_id,
+          dosage_matrix: matrix,
+          duration: duration,
+          timing: ""
+        }
+
+      _ ->
+        %{raw: item_str}
+    end
+  end
+
   def default_bmdc_no, do: @default_bmdc_no
   def default_doctor_name, do: @default_doctor_name
 

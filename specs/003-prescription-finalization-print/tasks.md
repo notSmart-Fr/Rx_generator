@@ -109,15 +109,15 @@
 
 ### Tests for User Story 4 (Strict Red-First TDD) 🔴
 
-- [ ] T033 [P] [US4] Create unit test in `test/rx_generator/prescriptions/verification_test.exs` asserting that `verify_qr_payload/1` returns `{:ok, %VerificationResult{status: :valid}}` for authentic payloads, and verify it fails (Red)
-- [ ] T034 [P] [US4] Create tamper detection test in `test/rx_generator/prescriptions/verification_test.exs` asserting that mutating any single character in the manifest or signature returns `{:error, %VerificationResult{status: :signature_mismatch}}`, and verify it fails (Red)
-- [ ] T035 [P] [US4] Create unknown signer test in `test/rx_generator/prescriptions/verification_test.exs` asserting that payloads signed by an unregistered BM&DC number return `{:error, %VerificationResult{status: :unknown_signer}}`, and verify it fails (Red)
+- [X] T033 [P] [US4] Create unit test in `test/rx_generator/prescriptions/verification_test.exs` asserting that `verify_qr_payload/1` returns `{:ok, %VerificationResult{status: :valid}}` for authentic payloads, and verify it fails (Red)
+- [X] T034 [P] [US4] Create tamper detection test in `test/rx_generator/prescriptions/verification_test.exs` asserting that mutating any single character in the manifest or signature returns `{:error, %VerificationResult{status: :signature_mismatch}}`, and verify it fails (Red)
+- [X] T035 [P] [US4] Create unknown signer test in `test/rx_generator/prescriptions/verification_test.exs` asserting that payloads signed by an unregistered BM&DC number return `{:error, %VerificationResult{status: :unknown_signer}}`, and verify it fails (Red)
 
 ### Implementation for User Story 4 🟢
 
-- [ ] T036 [P] [US4] Define `RxGenerator.Prescriptions.VerificationResult` struct in `lib/rx_generator/prescriptions/verification_result.ex` with fields: `valid?`, `status`, `rx_number`, `prescriber_bmdc_no`, `prescriber_name`, `timestamp`, `items`, `error_message`
-- [ ] T037 [US4] Implement `verify_qr_payload/1` in `lib/rx_generator/prescriptions/crypto.ex` splitting `manifest#signature`, resolving public key via `ProviderRegistry`, and verifying signature with `:crypto.verify/5`
-- [ ] T038 [US4] Expose `verify_prescription_payload/1` in `lib/rx_generator/prescriptions.ex` as the public domain API for verification
+- [X] T036 [P] [US4] Define `RxGenerator.Prescriptions.VerificationResult` struct in `lib/rx_generator/prescriptions/verification_result.ex` with fields: `valid?`, `status`, `rx_number`, `prescriber_bmdc_no`, `prescriber_name`, `timestamp`, `items`, `error_message`
+- [X] T037 [US4] Implement `verify_qr_payload/1` in `lib/rx_generator/prescriptions/crypto.ex` splitting `manifest#signature`, resolving public key via `ProviderRegistry`, and verifying signature with `:crypto.verify/5`
+- [X] T038 [US4] Expose `verify_prescription_payload/1` in `lib/rx_generator/prescriptions.ex` as the public domain API for verification
 
 **Checkpoint**: User Story 4 complete — offline verification proves document authenticity and flags all tampering attempts without internet access.
 

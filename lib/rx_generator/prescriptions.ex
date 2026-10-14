@@ -193,6 +193,14 @@ defmodule RxGenerator.Prescriptions do
     finalize_prescription(prescription, attrs)
   end
 
+  @doc """
+  Verifies a prescription QR payload offline against the local provider registry.
+  Returns `{:ok, %VerificationResult{status: :valid}}` or `{:error, %VerificationResult{}}`.
+  """
+  def verify_prescription_payload(payload) when is_binary(payload) do
+    Crypto.verify_qr_payload(payload)
+  end
+
   defp generate_rx_number do
     date_part = Date.utc_today() |> Date.to_iso8601() |> String.replace("-", "")
     random_part = :crypto.strong_rand_bytes(3) |> Base.encode16()
