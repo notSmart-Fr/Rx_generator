@@ -14,8 +14,7 @@ defmodule RxGenerator.Application do
        repos: Application.fetch_env!(:rx_generator, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:rx_generator, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RxGenerator.PubSub},
-      # Start a worker by calling: RxGenerator.Worker.start_link(arg)
-      # {RxGenerator.Worker, arg},
+      RxGenerator.Prescriptions.ProviderRegistry,
       # Start to serve requests, typically the last entry
       RxGeneratorWeb.Endpoint
     ]

@@ -91,7 +91,9 @@ defmodule RxGenerator.MixProject do
       {:bandit, "~> 1.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
-      {:stream_data, "~> 1.4"}
+      {:stream_data, "~> 1.4"},
+      {:eqrcode, "~> 0.1.10"},
+      {:mox, "~> 1.2", only: :test}
     ]
   end
 

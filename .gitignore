@@ -39,3 +39,8 @@ npm-debug.log
 *.db
 *.db-*
 
+# Offline cryptographic private keys
+/priv/keys/*.pem
+!/priv/keys/*_public.pem
+!/priv/keys/.gitkeep
+

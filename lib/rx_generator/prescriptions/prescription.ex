@@ -59,6 +59,21 @@ defmodule RxGenerator.Prescriptions.Prescription do
       public? true
     end
 
+    attribute :canonical_manifest, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :signature, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :finalized_at, :utc_datetime_usec do
+      allow_nil? true
+      public? true
+    end
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -69,5 +84,9 @@ defmodule RxGenerator.Prescriptions.Prescription do
       filter expr(is_nil(archived_at))
       sort display_order: :asc, inserted_at: :asc
     end
+  end
+
+  identities do
+    identity :unique_rx_number, [:rx_number]
   end
 end

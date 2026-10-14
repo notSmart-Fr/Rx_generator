@@ -9,10 +9,10 @@
 
 **Purpose**: Configure authorized cryptographic, QR rendering, and test mocking dependencies, setup local offline key directories, and establish Mox doubles.
 
-- [ ] T001 Add `{:eqrcode, "~> 0.1.10"}` and `{:mox, "~> 1.2", only: :test}` to `deps` in `mix.exs` and execute `mix deps.get`
-- [ ] T002 [P] Create local key storage directory `priv/keys/` and add `priv/keys/*.pem` (excluding sample public keys) to `.gitignore`
-- [ ] T003 [P] Define `RxGenerator.Printing.MockSpooler` using `Mox.defmock/2` in `test/support/mocks.ex` and configure `Mox` in `test/test_helper.exs`
-- [ ] T004 [P] Create `test/support/crypto_fixtures.ex` containing deterministic Ed25519 keypairs, sample physician BM&DC records, and provider registry fixture data
+- [X] T001 Add `{:eqrcode, "~> 0.1.10"}` and `{:mox, "~> 1.2", only: :test}` to `deps` in `mix.exs` and execute `mix deps.get`
+- [X] T002 [P] Create local key storage directory `priv/keys/` and add `priv/keys/*.pem` (excluding sample public keys) to `.gitignore`
+- [X] T003 [P] Define `RxGenerator.Printing.MockSpooler` using `Mox.defmock/2` in `test/support/mocks.ex` and configure `Mox` in `test/test_helper.exs`
+- [X] T004 [P] Create `test/support/crypto_fixtures.ex` containing deterministic Ed25519 keypairs, sample physician BM&DC records, and provider registry fixture data
 
 ---
 
@@ -20,11 +20,11 @@
 
 **Purpose**: Extend `Prescription` with cryptographic and timestamp fields, add partial unique indexes, harden `ParentIsDraft` validation against destroy blind spots, and establish the local provider registry.
 
-- [ ] T005 Update `RxGenerator.Prescriptions.Prescription` in `lib/rx_generator/prescriptions/prescription.ex` adding attributes: `canonical_manifest` (:string, allow_nil?: true), `signature` (:string, allow_nil?: true), `finalized_at` (:utc_datetime_usec, allow_nil?: true), and identity `identity :unique_rx_number, [:rx_number]`
-- [ ] T006 Generate and apply Ash SQLite database migration for new prescription signing fields via `mix ash.codegen add_prescription_signing_fields` and `mix ash.migrate`
-- [ ] T007 Harden `RxGenerator.Prescriptions.Validations.ParentIsDraft` in `lib/rx_generator/prescriptions/validations/parent_is_draft.ex` to check `changeset.data.prescription_id || Ash.Changeset.get_attribute(changeset, :prescription_id)` against parent prescription state, guaranteeing that `destroy` (soft-archival) actions are blocked on `:locked` prescriptions
-- [ ] T008 [P] Implement `RxGenerator.Prescriptions.ProviderRegistry` in `lib/rx_generator/prescriptions/provider_registry.ex` providing local offline BM&DC public key lookup (`get_public_key/1` and `register_provider/2`)
-- [ ] T009 [P] Implement self-bootstrapping Ed25519 keypair generator in `lib/rx_generator/prescriptions/crypto.ex` to automatically provision a local signing key in `:dev` and `:test` environments if `priv/keys/doctor_signing_key.pem` is absent
+- [X] T005 Update `RxGenerator.Prescriptions.Prescription` in `lib/rx_generator/prescriptions/prescription.ex` adding attributes: `canonical_manifest` (:string, allow_nil?: true), `signature` (:string, allow_nil?: true), `finalized_at` (:utc_datetime_usec, allow_nil?: true), and identity `identity :unique_rx_number, [:rx_number]`
+- [X] T006 Generate and apply Ash SQLite database migration for new prescription signing fields via `mix ash.codegen add_prescription_signing_fields` and `mix ash.migrate`
+- [X] T007 Harden `RxGenerator.Prescriptions.Validations.ParentIsDraft` in `lib/rx_generator/prescriptions/validations/parent_is_draft.ex` to check `changeset.data.prescription_id || Ash.Changeset.get_attribute(changeset, :prescription_id)` against parent prescription state, guaranteeing that `destroy` (soft-archival) actions are blocked on `:locked` prescriptions
+- [X] T008 [P] Implement `RxGenerator.Prescriptions.ProviderRegistry` in `lib/rx_generator/prescriptions/provider_registry.ex` providing local offline BM&DC public key lookup (`get_public_key/1` and `register_provider/2`)
+- [X] T009 [P] Implement self-bootstrapping Ed25519 keypair generator in `lib/rx_generator/prescriptions/crypto.ex` to automatically provision a local signing key in `:dev` and `:test` environments if `priv/keys/doctor_signing_key.pem` is absent
 
 **Checkpoint**: Foundation ready — database schema updated, destroy validation hardened, and local cryptographic provider registry established.
 
