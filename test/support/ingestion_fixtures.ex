@@ -1,39 +1,40 @@
 defmodule RxGenerator.Test.IngestionFixtures do
   @moduledoc """
   Fixtures and temporary CSV helpers for drug catalog ingestion testing.
-  Provides representative samples of:
-  - Bulk chemicals (Kg, Liter) to be skipped
-  - Trailing combinations (Isoniazid + Rifampicin 75 mg + 150 mg)
-  - Interspersed FDCs (Amoxicillin 500 mg + Clavulanic Acid 125 mg, Paracetamol 500 mg + Caffeine 65 mg)
-  - Narcotics Control Act 2018 scheduled drugs (Tramadol, Clonazepam, Morphine)
-  - Single molecules (Omeprazole 20 mg)
+  Provides representative 20-row DGDA samples covering:
+  - Bulk chemicals (Kg, Liter, DRUM, Bulk, gm (raw)) to be skipped
+  - Trailing combinations (Isoniazid + Rifampicin, Ethambutol + Isoniazid + Rifampicin)
+  - Interspersed FDCs with + and & (Amoxicillin + Clavulanic Acid, Paracetamol & Caffeine)
+  - Liquid / fractional units (10 mg/ml, 120 mg/5 ml)
+  - Products lacking numerical strengths (Oral Rehydration Salt)
+  - Scheduled narcotics (Morphine, Tramadol, Clonazepam, Alprazolam)
+  - Messy dosage form casings (" capsule ")
   """
 
-  @sample_csv """
-  SL   , Company                                                    , "Trade Name"                            , "Generic Name With Strength"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         , "Dosage Form"               , "DAR No"
-      1, "AB Life Science"                                          , "Zinc Sulphate Monohydrate BP"          , "Zinc Sulphate Monohydrate 1000 gm"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  , Kg                          , 481-0003-034
-      2, "AB Life Science"                                          , "Acetone BP (API)"                      , "Acetone 1000 ml"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    , Liter                       , 481-0004-034
-      3, "ACI HealthCare Limited"                                   , "AFDC-2 F/C"                            , "Isoniazid + Rifampicin 75 mg + 150 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              , Tablet                      , 394-0007-030
-      4, "ACI HealthCare Limited"                                   , "Acidex 20"                             , "Omeprazole 20 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   , Capsule                     , 394-0004-067
-      5, "Square Pharmaceuticals PLC"                               , "Camox 625"                             , "Amoxicillin 500 mg + Clavulanic Acid 125 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        , Tablet                      , 001-0010-020
-      6, "Beximco Pharmaceuticals Ltd."                             , "Napa Extra"                            , "Paracetamol 500 mg + Caffeine 65 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                , Tablet                      , 002-0020-030
-      7, "Radiant Pharmaceuticals Ltd."                             , "Rivotril"                              , "Clonazepam 0.5 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  , Tablet                      , 003-0030-040
-      8, "Square Pharmaceuticals PLC"                               , "Tramacon 50"                           , "Tramadol Hydrochloride 50 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       , Capsule                     , 001-0040-050
-      9, "Healthcare Pharmaceuticals Ltd."                          , "Morphin 15"                            , "Morphine Sulphate 15 mg"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            , Tablet                      , 004-0050-060
-     10, "Beximco Pharmaceuticals Ltd."                             , "Tofen Syrup"                           , "Ketotifen 1 mg/5 ml"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                , Syrup                       , 002-0060-070
+  @fixture_path Path.expand("../fixtures/dgda_sample.csv", __DIR__)
+
+  @doc """
+  Returns the path to the permanent 20-row DGDA sample fixture file.
   """
+  def fixture_path, do: @fixture_path
 
   @doc """
   Returns raw sample CSV content as binary.
   """
-  def sample_csv_content, do: @sample_csv
+  def sample_csv_content do
+    if File.exists?(@fixture_path) do
+      File.read!(@fixture_path)
+    else
+      ""
+    end
+  end
 
   @doc """
   Writes a sample CSV file to the provided path (or a default temporary path).
   """
   def create_sample_csv!(path \\ nil) do
     dest = path || Path.join(System.tmp_dir!(), "sample_medicines_#{Ash.UUID.generate()}.csv")
-    File.write!(dest, @sample_csv)
+    File.write!(dest, sample_csv_content())
     dest
   end
 end

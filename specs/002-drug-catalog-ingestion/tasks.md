@@ -40,14 +40,14 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T007 [P] [US1] Create unit tests for bulk unit exclusion, regex molecule/strength splitting, and narcotics tagging in `test/rx_generator/formulary/sanitizer_test.exs`
-- [ ] T008 [P] [US1] Create integration tests for chunked streaming, memory bounds (<100MB), trigger teardown, and atomic FTS5 rebuild in `test/rx_generator/formulary/ingestion_test.exs`
+- [x] T007 [P] [US1] Create unit tests for bulk unit exclusion, regex molecule/strength splitting, and narcotics tagging in `test/rx_generator/formulary/sanitizer_test.exs`
+- [x] T008 [P] [US1] Create integration tests for chunked streaming, memory bounds (<100MB), trigger teardown, and atomic FTS5 rebuild in `test/rx_generator/formulary/ingestion_test.exs`
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Implement `RxGenerator.Formulary.Ingestion.Sanitizer` with precompiled module attributes (`@trailing_regex`, `@interspersed_regex`) for molecule/strength extraction, bulk chemical filtering (`Kg`, `Liter`), and narcotics schedule checks in `lib/rx_generator/formulary/ingestion/sanitizer.ex`
-- [ ] T010 [US1] Implement streaming coordinator `RxGenerator.Formulary.Ingestion` using `File.stream!/1`, `NimbleCSV.RFC4180`, 500-item chunks, pre-stream trigger drop, `Repo.insert_all/2` with `on_conflict: :nothing, conflict_target: [:brand_name, :strength, :dosage_form]`, trigger restore, and atomic FTS5 rebuild in `lib/rx_generator/formulary/ingestion.ex`
-- [ ] T011 [US1] Verify and benchmark full catalog ingestion on `priv/data/medicine_information_export.csv` asserting peak memory < 100MB and total ingested count in `test/rx_generator/formulary/ingestion_test.exs`
+- [x] T009 [US1] Implement `RxGenerator.Formulary.Ingestion.Sanitizer` with precompiled module attributes (`@trailing_regex`, `@interspersed_regex`) for molecule/strength extraction, bulk chemical filtering (`Kg`, `Liter`), and narcotics schedule checks in `lib/rx_generator/formulary/ingestion/sanitizer.ex`
+- [x] T010 [US1] Implement streaming coordinator `RxGenerator.Formulary.Ingestion` using `File.stream!/1`, `NimbleCSV.RFC4180`, 500-item chunks, pre-stream trigger drop, `Repo.insert_all/2` with `on_conflict: :nothing, conflict_target: [:brand_name, :strength, :dosage_form]`, trigger restore, and atomic FTS5 rebuild in `lib/rx_generator/formulary/ingestion.ex`
+- [x] T011 [US1] Verify and benchmark full catalog ingestion on `priv/data/medicine_information_export.csv` asserting peak memory < 100MB and total ingested count in `test/rx_generator/formulary/ingestion_test.exs`
 
 **Checkpoint**: User Story 1 fully functional and testable independently. Catalog is populated and queryable.
 
