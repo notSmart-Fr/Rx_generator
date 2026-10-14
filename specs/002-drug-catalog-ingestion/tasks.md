@@ -63,13 +63,13 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T012 [P] [US2] Create unit and integration tests for `:form` / `:dosage_form` filtering (`:tab`, `:syr`, `:cap`, `:inj` and canonical strings) and trigram stop-word retention in `test/rx_generator/formulary/search_presentation_test.exs`
+- [x] T012 [P] [US2] Create unit and integration tests for `:form` / `:dosage_form` filtering (`:tab`, `:syr`, `:cap`, `:inj` and canonical strings) and trigram stop-word retention in `test/rx_generator/formulary/search_presentation_test.exs`
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Implement presentation form canonical mapping and parameterized SQLite query builder with positional `?` placeholders in `lib/rx_generator/formulary/search.ex`
-- [ ] T014 [US2] Integrate presentation filtering with FTS5 rowid joins and `DrugCatalogItem` hydration preserving rank order in `lib/rx_generator/formulary/search.ex`
-- [ ] T015 [US2] Verify search response latency < 15ms under form-filtered queries in `test/rx_generator/formulary/search_presentation_test.exs`
+- [x] T013 [US2] Implement presentation form canonical mapping and parameterized SQLite query builder with positional `?` placeholders in `lib/rx_generator/formulary/search.ex`
+- [x] T014 [US2] Integrate presentation filtering with FTS5 rowid joins and `DrugCatalogItem` hydration preserving rank order in `lib/rx_generator/formulary/search.ex`
+- [x] T015 [US2] Verify search response latency < 15ms under form-filtered queries in `test/rx_generator/formulary/search_presentation_test.exs`
 
 **Checkpoint**: User Stories 1 and 2 work independently. Form-filtered searching restricts candidates to clinician-requested presentations.
 
