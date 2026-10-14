@@ -60,17 +60,17 @@
 
 ### Tests for User Story 2 (Strict Red-First TDD) 🔴
 
-- [ ] T016 [P] [US2] Create unit test in `test/rx_generator/prescriptions/crypto_test.exs` asserting canonical manifest compilation with sanitized delimiters (`|` and `:`), 8-character `short_drug_id`, integer timestamp (`DateTime.to_unix/2`), and sorting by `display_order ASC`, and verify it fails (Red)
-- [ ] T017 [P] [US2] Create cryptographic test in `test/rx_generator/prescriptions/crypto_test.exs` asserting `:crypto.sign(:eddsa, :none, ...)` produces a 64-byte Ed25519 signature verifiable against the doctor's public key, and verify it fails (Red)
-- [ ] T018 [P] [US2] Create property-based fuzz test in `test/rx_generator/prescriptions/manifest_fuzz_test.exs` using `StreamData` asserting byte-level serialization determinism and asserting QR payload size is strictly < 450 bytes for prescriptions with up to 10 line items, and verify it fails (Red)
+- [X] T016 [P] [US2] Create unit test in `test/rx_generator/prescriptions/crypto_test.exs` asserting canonical manifest compilation with sanitized delimiters (`|` and `:`), 8-character `short_drug_id`, integer timestamp (`DateTime.to_unix/2`), and sorting by `display_order ASC`, and verify it fails (Red)
+- [X] T017 [P] [US2] Create cryptographic test in `test/rx_generator/prescriptions/crypto_test.exs` asserting `:crypto.sign(:eddsa, :none, ...)` produces a 64-byte Ed25519 signature verifiable against the doctor's public key, and verify it fails (Red)
+- [X] T018 [P] [US2] Create property-based fuzz test in `test/rx_generator/prescriptions/manifest_fuzz_test.exs` using `StreamData` asserting byte-level serialization determinism and asserting QR payload size is strictly < 450 bytes for prescriptions with up to 10 line items, and verify it fails (Red)
 
 ### Implementation for User Story 2 🟢
 
-- [ ] T019 [P] [US2] Define `RxGenerator.Prescriptions.Manifest` struct and implement `compile/1` in `lib/rx_generator/prescriptions/manifest.ex` sorting items strictly by `display_order ASC, then id ASC`, sanitizing internal `|` and `:` to `_`, and extracting 8-char `short_drug_id` prefixes
-- [ ] T020 [P] [US2] Implement `sign_manifest/2` and `verify_manifest/3` in `lib/rx_generator/prescriptions/crypto.ex` using Erlang native `:crypto.sign/4` and `:crypto.verify/5` with algorithm `:ed25519`
-- [ ] T021 [P] [US2] Implement `RxGenerator.Prescriptions.QRCode` in `lib/rx_generator/prescriptions/qr_code.ex` wrapping `eqrcode` to render raw SVG markup strings from `manifest#signature` payloads
-- [ ] T022 [US2] Integrate manifest signing and QR generation into `Prescriptions.finalize_prescription/2` in `lib/rx_generator/prescriptions.ex` so manifest and signature are atomically persisted upon locking
-- [ ] T023 [US2] Update `PrescriptionLive` in `lib/rx_generator_web/live/prescription_live.ex` and `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to render the SVG QR code element with physician BM&DC metadata upon finalization
+- [X] T019 [P] [US2] Define `RxGenerator.Prescriptions.Manifest` struct and implement `compile/1` in `lib/rx_generator/prescriptions/manifest.ex` sorting items strictly by `display_order ASC, then id ASC`, sanitizing internal `|` and `:` to `_`, and extracting 8-char `short_drug_id` prefixes
+- [X] T020 [P] [US2] Implement `sign_manifest/2` and `verify_manifest/3` in `lib/rx_generator/prescriptions/crypto.ex` using Erlang native `:crypto.sign/4` and `:crypto.verify/5` with algorithm `:ed25519`
+- [X] T021 [P] [US2] Implement `RxGenerator.Prescriptions.QRCode` in `lib/rx_generator/prescriptions/qr_code.ex` wrapping `eqrcode` to render raw SVG markup strings from `manifest#signature` payloads
+- [X] T022 [US2] Integrate manifest signing and QR generation into `Prescriptions.finalize_prescription/2` in `lib/rx_generator/prescriptions.ex` so manifest and signature are atomically persisted upon locking
+- [X] T023 [US2] Update `PrescriptionLive` in `lib/rx_generator_web/live/prescription_live.ex` and `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to render the SVG QR code element with physician BM&DC metadata upon finalization
 
 **Checkpoint**: User Stories 1 AND 2 complete — locked prescriptions carry offline-signed, tamper-evident QR codes with payload sizes safely below 450 bytes.
 

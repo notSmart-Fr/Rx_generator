@@ -14,6 +14,7 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       end
 
     items = if draft, do: draft.items || [], else: []
+    qr_svg = compute_qr_svg(draft)
 
     {:ok,
      assign(socket,
@@ -23,7 +24,8 @@ defmodule RxGeneratorWeb.PrescriptionLive do
        candidates: [],
        highlighted_index: 0,
        draft: draft,
-       items: items
+       items: items,
+       qr_svg: qr_svg
      )}
   end
 
@@ -46,6 +48,8 @@ defmodule RxGeneratorWeb.PrescriptionLive do
           items={@items}
           state={if(@draft, do: @draft.state, else: :draft)}
           rx_number={if(@draft, do: @draft.rx_number, else: nil)}
+          prescriber_bmdc_no={if(@draft, do: @draft.prescriber_bmdc_no, else: nil)}
+          qr_svg={@qr_svg}
         />
       </div>
     </div>
@@ -137,9 +141,11 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       draft ->
         case Prescriptions.finalize_prescription(draft) do
           {:ok, locked_rx} ->
+            qr_svg = compute_qr_svg(locked_rx)
+
             {:noreply,
              socket
-             |> assign(draft: locked_rx, error: nil)
+             |> assign(draft: locked_rx, qr_svg: qr_svg, error: nil)
              |> put_flash(
                :info,
                "Prescription #{locked_rx.rx_number} finalized and permanently locked."
@@ -159,6 +165,18 @@ defmodule RxGeneratorWeb.PrescriptionLive do
         end
     end
   end
+
+  defp compute_qr_svg(%{state: :locked, canonical_manifest: manifest, signature: sig})
+       when is_binary(manifest) and is_binary(sig) do
+    payload = RxGenerator.Prescriptions.Crypto.build_qr_payload(manifest, sig)
+
+    case RxGenerator.Prescriptions.QRCode.generate_svg(payload) do
+      {:ok, svg} -> svg
+      _ -> nil
+    end
+  end
+
+  defp compute_qr_svg(_), do: nil
 
   defp calculate_new_index("down", current, count), do: rem(current + 1, count)
   defp calculate_new_index("up", 0, count), do: count - 1

@@ -56,9 +56,17 @@ defmodule RxGenerator.Prescriptions.ImmutabilityTest do
       assert locked.state == :locked
       assert locked.finalized_at != nil
 
+      # Assert Spec 03 cryptographic manifest & Ed25519 signature generation
+      assert locked.canonical_manifest != nil
+      assert String.starts_with?(locked.canonical_manifest, "v1|RX-TEST-001|A-12345|")
+      assert locked.signature != nil
+      assert byte_size(Base.decode64!(locked.signature)) == 64
+
       reloaded = Ash.get!(Prescription, draft.id)
       assert reloaded.state == :locked
       assert reloaded.finalized_at != nil
+      assert reloaded.canonical_manifest == locked.canonical_manifest
+      assert reloaded.signature == locked.signature
     end
   end
 

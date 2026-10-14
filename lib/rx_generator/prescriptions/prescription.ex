@@ -66,7 +66,13 @@ defmodule RxGenerator.Prescriptions.Prescription do
         end
       end
 
-      change set_attribute(:finalized_at, &DateTime.utc_now/0)
+      change fn changeset, _context ->
+        case Ash.Changeset.get_attribute(changeset, :finalized_at) do
+          nil -> Ash.Changeset.change_attribute(changeset, :finalized_at, DateTime.utc_now())
+          _ -> changeset
+        end
+      end
+
       change transition_state(:locked)
     end
 

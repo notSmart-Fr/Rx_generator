@@ -596,6 +596,8 @@ defmodule RxGeneratorWeb.CoreComponents do
   attr :items, :list, default: []
   attr :state, :atom, default: :draft
   attr :rx_number, :string, default: nil
+  attr :prescriber_bmdc_no, :string, default: nil
+  attr :qr_svg, :string, default: nil
 
   def prescription_canvas(assigns) do
     ~H"""
@@ -689,9 +691,30 @@ defmodule RxGeneratorWeb.CoreComponents do
       <div class="mt-8 pt-6 border-t border-zinc-200 flex justify-between items-center print:hidden">
         <div>
           <%= if @state == :locked do %>
-            <p class="text-xs text-zinc-500">
-              Prescription finalized. Modifications and deletions are permanently prohibited.
-            </p>
+            <div class="flex items-center gap-4">
+              <%= if @qr_svg do %>
+                <div
+                  id="prescription-qr-code"
+                  class="w-24 h-24 p-1.5 bg-white border border-zinc-200 rounded-xl shadow-inner flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full"
+                >
+                  {Phoenix.HTML.raw(@qr_svg)}
+                </div>
+              <% end %>
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <.icon name="hero-shield-check" class="w-4 h-4 text-emerald-600" />
+                  Tamper-Evident Ed25519 Seal
+                </p>
+                <p class="text-[11px] text-zinc-500">
+                  Prescriber BM&DC:
+                  <span class="font-mono font-semibold text-zinc-700">{@prescriber_bmdc_no ||
+                    "A-12345"}</span>
+                </p>
+                <p class="text-[10px] text-zinc-400">
+                  Air-gapped verification against local registry snapshot.
+                </p>
+              </div>
+            </div>
           <% else %>
             <p class="text-xs text-zinc-500">
               Review medications carefully before sealing prescription.

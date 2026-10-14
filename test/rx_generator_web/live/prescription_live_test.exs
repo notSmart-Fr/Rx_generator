@@ -210,11 +210,13 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
       # Click Finalize
       element(view, "#finalize-prescription-btn") |> render_click()
 
-      # Canvas should now show locked badge and hide omnibar input
+      # Canvas should now show locked badge, QR code SVG, and hide omnibar input
       assert has_element?(view, "#prescription-locked-badge")
+      assert has_element?(view, "#prescription-qr-code")
       refute has_element?(view, "#finalize-prescription-btn")
       refute has_element?(view, "#prescription-omnibar")
       assert render(view) =~ "FINALIZED &amp; IMMUTABLE"
+      assert render(view) =~ "Tamper-Evident Ed25519 Seal"
     end
   end
 end
