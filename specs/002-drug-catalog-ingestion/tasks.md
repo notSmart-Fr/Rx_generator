@@ -103,9 +103,9 @@
 
 **Purpose**: Improvements that affect multiple user stories, code quality, and documentation
 
-- [ ] T022 [P] Update quickstart verification scenarios with runnable IEx and test commands in `specs/002-drug-catalog-ingestion/quickstart.md`
-- [ ] T023 [P] Validate spec requirements checklist compliance in `specs/002-drug-catalog-ingestion/checklists/requirements.md`
-- [ ] T024 Run `mix precommit` (compiler checks, formatting, Credo, test suite) and resolve any warnings or failures across the project
+- [x] T022 [P] Update quickstart verification scenarios with runnable IEx and test commands in `specs/002-drug-catalog-ingestion/quickstart.md`
+- [x] T023 [P] Validate spec requirements checklist compliance in `specs/002-drug-catalog-ingestion/checklists/requirements.md`
+- [x] T024 Run `mix precommit` (compiler checks, formatting, Credo, test suite) and resolve any warnings or failures across the project
 
 ---
 
