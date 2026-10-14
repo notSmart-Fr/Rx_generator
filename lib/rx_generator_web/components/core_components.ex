@@ -599,7 +599,7 @@ defmodule RxGeneratorWeb.CoreComponents do
     ~H"""
     <div
       id={@id}
-      class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-[400px]"
+      class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-100"
     >
       <div class="border-b border-zinc-200 pb-4 mb-6 flex justify-between items-center">
         <div>
