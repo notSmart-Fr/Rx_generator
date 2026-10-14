@@ -105,3 +105,45 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* High Court Compliant Print Layout (Spec 03 / User Story 3) */
+@media print {
+  /* Suppress all interactive HUD controls, omnibar, search results, and layout bars */
+  #prescription-omnibar,
+  header,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure prescription canvas expands to full paper width without shadows or margins */
+  #prescription-canvas {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    background-color: transparent !important;
+  }
+
+  /* Enforce bold uppercase generics (equal or greater prominence than brand name) */
+  .generic-name-print {
+    font-size: 1.25rem !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    color: #000 !important;
+  }
+
+  .brand-name-print {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+  }
+
+  /* Force page breaks to avoid splitting a medication block across pages */
+  .rx-item-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

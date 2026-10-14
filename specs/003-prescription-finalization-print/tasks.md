@@ -84,18 +84,18 @@
 
 ### Tests for User Story 3 (Strict Red-First TDD) 🔴
 
-- [ ] T024 [P] [US3] Create unit test in `test/rx_generator/printing/spooler_test.exs` asserting that invoking `RxGenerator.Printing.Spooler.spool/2` delegates to `RxGenerator.Printing.MockSpooler` using `Mox.expect/4`, and verify it fails (Red)
-- [ ] T025 [P] [US3] Create LiveView test in `test/rx_generator_web/live/prescription_finalization_live_test.exs` asserting that clicking the print button on a finalized prescription pushes `"print_prescription"` event to client, and verify it fails (Red)
+- [X] T024 [P] [US3] Create unit test in `test/rx_generator/printing/spooler_test.exs` asserting that invoking `RxGenerator.Printing.Spooler.spool/2` delegates to `RxGenerator.Printing.MockSpooler` using `Mox.expect/4`, and verify it fails (Red)
+- [X] T025 [P] [US3] Create LiveView test in `test/rx_generator_web/live/prescription_finalization_live_test.exs` asserting that clicking the print button on a finalized prescription pushes `"print_prescription"` event to client, and verify it fails (Red)
 
 ### Implementation for User Story 3 🟢
 
-- [ ] T026 [P] [US3] Define `RxGenerator.Printing.Spooler` behaviour in `lib/rx_generator/printing/spooler.ex` with callback `@callback spool(prescription :: Prescription.t(), opts :: keyword()) :: :ok | {:error, term()}`
-- [ ] T027 [P] [US3] Implement `RxGenerator.Printing.OSSpooler` in `lib/rx_generator/printing/os_spooler.ex` interfacing with system printing capabilities
-- [ ] T028 [US3] Configure `:print_spooler` in `config/config.exs` (pointing to `OSSpooler`) and `config/test.exs` (pointing to `MockSpooler`)
-- [ ] T029 [P] [US3] Create client JavaScript print hook in `assets/js/hooks/print_prescription.js` listening for `"print_prescription"` event and calling `window.print()`
-- [ ] T030 [US3] Register `PrintPrescription` hook in `assets/js/app.js`
-- [ ] T031 [P] [US3] Add `@media print` CSS rules in `assets/css/app.css` to hide `#prescription-omnibar`, navigation, and HUD controls, expand `#prescription-canvas` to 100% width, format bold uppercase generics (`.generic-name-print`), and prevent page breaks inside medication rows
-- [ ] T032 [US3] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to display an interactive "Print Prescription" button when locked and apply High Court typography classes
+- [X] T026 [P] [US3] Define `RxGenerator.Printing.Spooler` behaviour in `lib/rx_generator/printing/spooler.ex` with callback `@callback spool(prescription :: Prescription.t(), opts :: keyword()) :: :ok | {:error, term()}`
+- [X] T027 [P] [US3] Implement `RxGenerator.Printing.OSSpooler` in `lib/rx_generator/printing/os_spooler.ex` interfacing with system printing capabilities
+- [X] T028 [US3] Configure `:print_spooler` in `config/config.exs` (pointing to `OSSpooler`) and `config/test.exs` (pointing to `MockSpooler`)
+- [X] T029 [P] [US3] Create client JavaScript print hook in `assets/js/hooks/print_prescription.js` listening for `"print_prescription"` event and calling `window.print()`
+- [X] T030 [US3] Register `PrintPrescription` hook in `assets/js/app.js`
+- [X] T031 [P] [US3] Add `@media print` CSS rules in `assets/css/app.css` to hide `#prescription-omnibar`, navigation, and HUD controls, expand `#prescription-canvas` to 100% width, format bold uppercase generics (`.generic-name-print`), and prevent page breaks inside medication rows
+- [X] T032 [US3] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to display an interactive "Print Prescription" button when locked and apply High Court typography classes
 
 **Checkpoint**: User Story 3 complete — print layout adheres to High Court generic mandates, and dual-dispatch spooling operates seamlessly across browser and headless drivers.
 

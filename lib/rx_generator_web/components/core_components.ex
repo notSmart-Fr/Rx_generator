@@ -644,15 +644,15 @@ defmodule RxGeneratorWeb.CoreComponents do
           <div
             :for={{item, index} <- Enum.with_index(@items)}
             id={"rx-item-#{index}"}
-            class="p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors"
+            class="rx-item-row p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors"
           >
             <div class="flex items-baseline justify-between">
               <div>
                 <span class="text-xs font-bold text-zinc-400 mr-2">{index + 1}.</span>
-                <span class="text-lg font-black uppercase tracking-wide text-zinc-900">
+                <span class="generic-name-print text-lg font-black uppercase tracking-wide text-zinc-900">
                   {String.upcase(item.generic_name_snapshot)}
                 </span>
-                <span class="ml-2 text-sm font-semibold text-zinc-600">
+                <span class="brand-name-print ml-2 text-sm font-semibold text-zinc-600">
                   ({item.brand_name_snapshot})
                 </span>
               </div>
@@ -722,7 +722,16 @@ defmodule RxGeneratorWeb.CoreComponents do
           <% end %>
         </div>
         <div>
-          <%= if @state != :locked do %>
+          <%= if @state == :locked do %>
+            <button
+              id="print-prescription-btn"
+              type="button"
+              phx-click="trigger_print"
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm transition-all cursor-pointer"
+            >
+              <.icon name="hero-printer" class="w-4 h-4" /> Print Prescription
+            </button>
+          <% else %>
             <button
               id="finalize-prescription-btn"
               type="button"

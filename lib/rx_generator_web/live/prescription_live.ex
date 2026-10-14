@@ -133,6 +133,16 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   end
 
   @impl true
+  def handle_event("trigger_print", _params, socket) do
+    if socket.assigns.draft && socket.assigns.draft.state == :locked do
+      _ = RxGenerator.Printing.Spooler.spool(socket.assigns.draft, copies: 1)
+      {:noreply, push_event(socket, "print_prescription", %{})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("finalize_prescription", _params, socket) do
     case socket.assigns.draft do
       nil ->

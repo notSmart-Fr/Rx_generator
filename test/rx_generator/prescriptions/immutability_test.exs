@@ -10,11 +10,27 @@ defmodule RxGenerator.Prescriptions.ImmutabilityTest do
   require Ash.Query
 
   setup do
-    try do
-      RxGenerator.Repo.query!("DELETE FROM drug_catalog;")
-    rescue
-      _ -> :ok
-    end
+    RxGenerator.Repo.query!("DELETE FROM prescription_items;")
+    RxGenerator.Repo.query!("DELETE FROM prescriptions;")
+    RxGenerator.Repo.query!("DROP TRIGGER IF EXISTS drug_catalog_ai;")
+    RxGenerator.Repo.query!("DROP TRIGGER IF EXISTS drug_catalog_ad;")
+    RxGenerator.Repo.query!("DROP TRIGGER IF EXISTS drug_catalog_au;")
+    RxGenerator.Repo.query!("DELETE FROM drug_catalog;")
+    RxGenerator.Repo.query!("DELETE FROM drug_catalog_fts;")
+
+    RxGenerator.Repo.query!("""
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_ai AFTER INSERT ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES (new.rowid, new.brand_name, new.generic_name, new.strength, new.dosage_form);
+    END;
+    """)
+
+    RxGenerator.Repo.query!("""
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_ad AFTER DELETE ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(drug_catalog_fts, rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES ('delete', old.rowid, old.brand_name, old.generic_name, old.strength, old.dosage_form);
+    END;
+    """)
 
     FormularyFixtures.seed_catalog!()
     :ok

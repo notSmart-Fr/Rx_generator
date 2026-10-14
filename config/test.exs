@@ -21,6 +21,9 @@ config :rx_generator, RxGeneratorWeb.Endpoint,
 # In test we don't send emails
 config :rx_generator, RxGenerator.Mailer, adapter: Swoosh.Adapters.Test
 
+# Test double mock spooler
+config :rx_generator, :print_spooler, RxGenerator.Printing.MockSpooler
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
