@@ -31,17 +31,21 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-zinc-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-4xl mx-auto">
-        <.omnibar
-          id="prescription-omnibar"
-          query={@query}
-          error={@error}
-          candidates={@candidates}
-          highlighted_index={@highlighted_index}
-        />
+      <div class="max-w-4xl mx-auto space-y-6">
+        <%= if @draft && @draft.state != :locked do %>
+          <.omnibar
+            id="prescription-omnibar"
+            query={@query}
+            error={@error}
+            candidates={@candidates}
+            highlighted_index={@highlighted_index}
+          />
+        <% end %>
         <.prescription_canvas
           id="prescription-canvas"
           items={@items}
+          state={if(@draft, do: @draft.state, else: :draft)}
+          rx_number={if(@draft, do: @draft.rx_number, else: nil)}
         />
       </div>
     </div>
@@ -121,6 +125,38 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       {:noreply, socket}
     else
       commit_parsed_query(trimmed, query, socket)
+    end
+  end
+
+  @impl true
+  def handle_event("finalize_prescription", _params, socket) do
+    case socket.assigns.draft do
+      nil ->
+        {:noreply, put_flash(socket, :error, "No active draft prescription found")}
+
+      draft ->
+        case Prescriptions.finalize_prescription(draft) do
+          {:ok, locked_rx} ->
+            {:noreply,
+             socket
+             |> assign(draft: locked_rx, error: nil)
+             |> put_flash(
+               :info,
+               "Prescription #{locked_rx.rx_number} finalized and permanently locked."
+             )}
+
+          {:error, %Ash.Error.Invalid{errors: errors}} ->
+            error_msg =
+              Enum.map_join(errors, ", ", fn
+                %{message: msg} -> msg
+                other -> inspect(other)
+              end)
+
+            {:noreply, put_flash(socket, :error, "Failed to finalize: #{error_msg}")}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, "Failed to finalize prescription")}
+        end
     end
   end
 

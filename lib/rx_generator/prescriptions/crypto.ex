@@ -96,7 +96,8 @@ defmodule RxGenerator.Prescriptions.Crypto do
   Deconstructs a unified QR payload into `{manifest_string, base64_signature}`.
   Splits on the last `#` occurrence to prevent corruption if the manifest contains `#`.
   """
-  @spec parse_qr_payload(String.t()) :: {:ok, String.t(), String.t()} | {:error, :malformed_payload}
+  @spec parse_qr_payload(String.t()) ::
+          {:ok, String.t(), String.t()} | {:error, :malformed_payload}
   def parse_qr_payload(payload) when is_binary(payload) do
     case :binary.matches(payload, "#") do
       [] ->

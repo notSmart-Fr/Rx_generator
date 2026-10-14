@@ -139,12 +139,27 @@ defmodule RxGenerator.Prescriptions do
   end
 
   @doc """
+  Finalizes a draft prescription with atomic locking and immutability sealing.
+  """
+  def finalize_prescription(%Prescription{} = prescription, attrs \\ %{}) do
+    prescription
+    |> Ash.load(:items)
+    |> case do
+      {:ok, loaded_rx} ->
+        loaded_rx
+        |> Ash.Changeset.for_update(:lock, attrs)
+        |> Ash.update()
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
   Transitions a draft prescription to :locked state.
   """
-  def lock_prescription(%Prescription{} = prescription) do
-    prescription
-    |> Ash.Changeset.for_update(:lock, %{})
-    |> Ash.update()
+  def lock_prescription(%Prescription{} = prescription, attrs \\ %{}) do
+    finalize_prescription(prescription, attrs)
   end
 
   defp generate_rx_number do

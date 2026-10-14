@@ -31,7 +31,42 @@ defmodule RxGenerator.Prescriptions.Prescription do
     end
 
     update :lock do
-      accept []
+      require_atomic? false
+      accept [:canonical_manifest, :signature, :finalized_at]
+
+      validate fn changeset, _context ->
+        items =
+          case Ash.Changeset.get_attribute(changeset, :items) do
+            nil ->
+              case changeset.data do
+                %{items: %Ash.NotLoaded{}} ->
+                  case Ash.load(changeset.data, :items) do
+                    {:ok, loaded} -> loaded.items || []
+                    _ -> []
+                  end
+
+                %{items: loaded_items} when is_list(loaded_items) ->
+                  loaded_items
+
+                _ ->
+                  []
+              end
+
+            list when is_list(list) ->
+              list
+          end
+
+        active_items = Enum.filter(items, &is_nil(&1.archived_at))
+
+        if active_items == [] do
+          {:error,
+           field: :items, message: "cannot finalize a prescription with zero active medications"}
+        else
+          :ok
+        end
+      end
+
+      change set_attribute(:finalized_at, &DateTime.utc_now/0)
       change transition_state(:locked)
     end
 

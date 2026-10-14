@@ -118,8 +118,7 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-config :phoenix_live_view, :colocated_assets,
-  disable_symlink_warning: true
+config :phoenix_live_view, :colocated_assets, disable_symlink_warning: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

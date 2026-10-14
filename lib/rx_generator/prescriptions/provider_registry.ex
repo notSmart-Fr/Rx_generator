@@ -44,7 +44,8 @@ defmodule RxGenerator.Prescriptions.ProviderRegistry do
   Registers or updates a verified physician record in the local registry.
   """
   @spec register_provider(String.t(), map()) :: :ok
-  def register_provider(bmdc_no, provider_data) when is_binary(bmdc_no) and is_map(provider_data) do
+  def register_provider(bmdc_no, provider_data)
+      when is_binary(bmdc_no) and is_map(provider_data) do
     record =
       provider_data
       |> Map.put(:bmdc_no, bmdc_no)

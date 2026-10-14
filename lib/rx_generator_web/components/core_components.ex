@@ -594,6 +594,8 @@ defmodule RxGeneratorWeb.CoreComponents do
   """
   attr :id, :string, default: "prescription-canvas"
   attr :items, :list, default: []
+  attr :state, :atom, default: :draft
+  attr :rx_number, :string, default: nil
 
   def prescription_canvas(assigns) do
     ~H"""
@@ -603,9 +605,23 @@ defmodule RxGeneratorWeb.CoreComponents do
     >
       <div class="border-b border-zinc-200 pb-4 mb-6 flex justify-between items-center">
         <div>
-          <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
+          <div class="flex items-center gap-3">
+            <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
+            <%= if @state == :locked do %>
+              <span
+                id="prescription-locked-badge"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300"
+              >
+                <.icon name="hero-lock-closed" class="w-3.5 h-3.5" /> FINALIZED & IMMUTABLE
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                DRAFT
+              </span>
+            <% end %>
+          </div>
           <p class="text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
-            Clinical Order Record
+            Clinical Order Record {if @rx_number, do: "• #{@rx_number}"}
           </p>
         </div>
         <div class="text-right text-xs text-zinc-400">
@@ -668,6 +684,39 @@ defmodule RxGeneratorWeb.CoreComponents do
             </div>
           </div>
         <% end %>
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-zinc-200 flex justify-between items-center print:hidden">
+        <div>
+          <%= if @state == :locked do %>
+            <p class="text-xs text-zinc-500">
+              Prescription finalized. Modifications and deletions are permanently prohibited.
+            </p>
+          <% else %>
+            <p class="text-xs text-zinc-500">
+              Review medications carefully before sealing prescription.
+            </p>
+          <% end %>
+        </div>
+        <div>
+          <%= if @state != :locked do %>
+            <button
+              id="finalize-prescription-btn"
+              type="button"
+              phx-click="finalize_prescription"
+              disabled={@items == []}
+              class={[
+                "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all",
+                if(@items == [],
+                  do: "bg-zinc-200 text-zinc-400 cursor-not-allowed",
+                  else: "bg-zinc-900 text-white hover:bg-zinc-800 active:scale-95 cursor-pointer"
+                )
+              ]}
+            >
+              <.icon name="hero-lock-closed" class="w-4 h-4" /> Finalize Prescription
+            </button>
+          <% end %>
+        </div>
       </div>
     </div>
     """

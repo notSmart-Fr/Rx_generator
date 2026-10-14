@@ -38,15 +38,15 @@
 
 ### Tests for User Story 1 (Strict Red-First TDD) 🔴
 
-- [ ] T010 [P] [US1] Create unit test in `test/rx_generator/prescriptions/immutability_test.exs` asserting that `:lock` action transitions state from `:draft` to `:locked`, rejects prescriptions with 0 items, and verify it fails (Red)
-- [ ] T011 [P] [US1] Create immutability test in `test/rx_generator/prescriptions/immutability_test.exs` asserting that calling `create_item`, updating an item, or calling `remove_item` on a `:locked` prescription returns an error, and verify it fails (Red)
+- [X] T010 [P] [US1] Create unit test in `test/rx_generator/prescriptions/immutability_test.exs` asserting that `:lock` action transitions state from `:draft` to `:locked`, rejects prescriptions with 0 items, and verify it fails (Red)
+- [X] T011 [P] [US1] Create immutability test in `test/rx_generator/prescriptions/immutability_test.exs` asserting that calling `create_item`, updating an item, or calling `remove_item` on a `:locked` prescription returns an error, and verify it fails (Red)
 
 ### Implementation for User Story 1 🟢
 
-- [ ] T012 [US1] Configure the `:lock` update action in `lib/rx_generator/prescriptions/prescription.ex` to accept `[:canonical_manifest, :signature, :finalized_at]`, validate `items` is non-empty (`length(items) > 0`), and execute `change transition_state(:locked)`
-- [ ] T013 [US1] Implement `finalize_prescription/2` in `lib/rx_generator/prescriptions.ex` loading items and executing the `:lock` action with atomic timestamping
-- [ ] T014 [US1] Implement `handle_event("finalize_prescription", _params, socket)` in `lib/rx_generator_web/live/prescription_live.ex` calling `Prescriptions.finalize_prescription/2` and updating socket state
-- [ ] T015 [US1] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to display a "Finalize Prescription" button when `:draft` and a prominent "FINALIZED & IMMUTABLE" security badge when `:locked`, while disabling omnibar editing controls
+- [X] T012 [US1] Configure the `:lock` update action in `lib/rx_generator/prescriptions/prescription.ex` to accept `[:canonical_manifest, :signature, :finalized_at]`, validate `items` is non-empty (`length(items) > 0`), and execute `change transition_state(:locked)`
+- [X] T013 [US1] Implement `finalize_prescription/2` in `lib/rx_generator/prescriptions.ex` loading items and executing the `:lock` action with atomic timestamping
+- [X] T014 [US1] Implement `handle_event("finalize_prescription", _params, socket)` in `lib/rx_generator_web/live/prescription_live.ex` calling `Prescriptions.finalize_prescription/2` and updating socket state
+- [X] T015 [US1] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to display a "Finalize Prescription" button when `:draft` and a prominent "FINALIZED & IMMUTABLE" security badge when `:locked`, while disabling omnibar editing controls
 
 **Checkpoint**: User Story 1 (MVP) complete — prescriptions can be locked, and line items are permanently immutable across create, update, and soft-delete actions.
 

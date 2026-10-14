@@ -52,7 +52,9 @@ defmodule RxGenerator.Prescriptions.CryptoFoundationTest do
       assert parsed_sig == sig
 
       # Error handling on missing delimiter
-      assert {:error, :malformed_payload} = Crypto.parse_qr_payload("malformed_payload_without_hash")
+      assert {:error, :malformed_payload} =
+               Crypto.parse_qr_payload("malformed_payload_without_hash")
+
       assert {:error, :malformed_payload} = Crypto.parse_qr_payload("")
     end
   end
