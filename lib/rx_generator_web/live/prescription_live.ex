@@ -2,11 +2,19 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   use RxGeneratorWeb, :live_view
 
   alias RxGenerator.Formulary.Search
+  alias RxGenerator.Prescriptions
   alias RxGenerator.Prescriptions.ShorthandParser
-  alias RxGenerator.Prescriptions.PrescriptionItem
 
   @impl true
   def mount(_params, _session, socket) do
+    draft =
+      case Prescriptions.get_or_create_active_draft() do
+        {:ok, rx} -> rx
+        _ -> nil
+      end
+
+    items = if draft, do: draft.items || [], else: []
+
     {:ok,
      assign(socket,
        page_title: "New Prescription",
@@ -14,7 +22,8 @@ defmodule RxGeneratorWeb.PrescriptionLive do
        error: nil,
        candidates: [],
        highlighted_index: 0,
-       items: []
+       draft: draft,
+       items: items
      )}
   end
 
@@ -89,6 +98,11 @@ defmodule RxGeneratorWeb.PrescriptionLive do
         last_item = List.last(items)
         remaining = Enum.slice(items, 0..-2//1)
 
+        # Soft-archive the removed item in SQLite
+        if last_item.id do
+          Prescriptions.remove_item(last_item.id)
+        end
+
         # Reconstruct shorthand representation for recalled item
         recalled_text =
           [
@@ -144,40 +158,40 @@ defmodule RxGeneratorWeb.PrescriptionLive do
 
       case candidates do
         [drug | _] ->
-          canonical_bengali =
-            RxGenerator.Prescriptions.BengaliTranslator.to_canonical(
-              parsed.dosage_matrix,
-              parsed.duration_expression,
-              parsed.timing_code
-            )
+          draft = socket.assigns.draft || elem(Prescriptions.get_or_create_active_draft(), 1)
+          display_order = length(socket.assigns.items)
 
-          bengali_breakdown =
-            RxGenerator.Prescriptions.BengaliTranslator.to_breakdown(
-              to_string(parsed.dosage_matrix)
-            )
-
-          item = %PrescriptionItem{
-            id: Ash.UUID.generate(),
-            drug_catalog_item_id: drug.id,
-            brand_name_snapshot: drug.brand_name,
-            generic_name_snapshot: drug.generic_name,
-            dosage_form_snapshot: drug.dosage_form,
-            strength_snapshot: drug.strength,
-            dosage_matrix: to_string(parsed.dosage_matrix),
-            duration_expression: to_string(parsed.duration_expression),
-            timing_instruction: parsed.timing_code && to_string(parsed.timing_code),
-            canonical_bengali_text: canonical_bengali,
-            bengali_breakdown_text: bengali_breakdown,
-            display_order: length(socket.assigns.items)
+          shorthand_map = %{
+            dosage_matrix: parsed.dosage_matrix,
+            duration_expression: parsed.duration_expression,
+            timing_code: parsed.timing_code
           }
 
-          {:noreply,
-           assign(socket,
-             items: socket.assigns.items ++ [item],
-             query: "",
-             candidates: [],
-             error: nil
-           )}
+          case Prescriptions.add_item_to_draft(draft, drug, shorthand_map, display_order) do
+            {:ok, item} ->
+              {:noreply,
+               assign(socket,
+                 draft: draft,
+                 items: socket.assigns.items ++ [item],
+                 query: "",
+                 candidates: [],
+                 error: nil
+               )}
+
+            {:error, %Ash.Error.Invalid{} = _inv} ->
+              {:noreply,
+               assign(socket,
+                 error: "Cannot add duplicate drug or modify locked prescription",
+                 query: query
+               )}
+
+            {:error, _other} ->
+              {:noreply,
+               assign(socket,
+                 error: "Failed to persist prescription item",
+                 query: query
+               )}
+          end
 
         [] ->
           {:noreply,

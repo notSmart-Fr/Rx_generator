@@ -85,15 +85,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T016 [P] [US3] Create tests for relational SQLite persistence, draft state machine mutability, locked immutability, soft archival of removed items, and draft reloading in `test/rx_generator/prescriptions/persistent_drafts_test.exs`
+- [x] T016 [P] [US3] Create tests for relational SQLite persistence, draft state machine mutability, locked immutability, soft archival of removed items, and draft reloading in `test/rx_generator/prescriptions/persistent_drafts_test.exs`
 
 ### Implementation for User Story 3
 
-- [ ] T017 [P] [US3] Migrate `RxGenerator.Prescriptions.Prescription` to `AshSqlite.DataLayer` with table `"prescriptions"`, `AshStateMachine` (`initial_states: [:draft]`, `default_initial_state: :draft`, `transition :lock, from: :draft, to: :locked`), `has_many :items`, and query actions in `lib/rx_generator/prescriptions/prescription.ex`
-- [ ] T018 [P] [US3] Migrate `RxGenerator.Prescriptions.PrescriptionItem` to `AshSqlite.DataLayer` with table `"prescription_items"`, `AshArchival.Resource`, `belongs_to :prescription`, `belongs_to :drug_catalog_item`, and draft-state validation invariant in `lib/rx_generator/prescriptions/prescription_item.ex`
-- [ ] T019 [US3] Implement domain boundary functions (`create_prescription/1`, `get_prescription/1`, `add_item/2`, `update_item/2`, `remove_item/1`, `lock_prescription/1`) in `lib/rx_generator/prescriptions.ex`
-- [ ] T020 [US3] Connect `RxGeneratorWeb.PrescriptionLive` to persist draft prescription items to SQLite instead of in-memory simple maps in `lib/rx_generator_web/live/prescription_live.ex`
-- [ ] T021 [US3] Verify draft reload and soft archival persistence in `test/rx_generator/prescriptions/persistent_drafts_test.exs`
+- [x] T017 [P] [US3] Migrate `RxGenerator.Prescriptions.Prescription` to `AshSqlite.DataLayer` with table `"prescriptions"`, `AshStateMachine` (`initial_states: [:draft]`, `default_initial_state: :draft`, `transition :lock, from: :draft, to: :locked`), `has_many :items`, and query actions in `lib/rx_generator/prescriptions/prescription.ex`
+- [x] T018 [P] [US3] Migrate `RxGenerator.Prescriptions.PrescriptionItem` to `AshSqlite.DataLayer` with table `"prescription_items"`, `AshArchival.Resource`, `belongs_to :prescription`, `belongs_to :drug_catalog_item`, and draft-state validation invariant in `lib/rx_generator/prescriptions/prescription_item.ex`
+- [x] T019 [US3] Implement domain boundary functions (`create_prescription/1`, `get_prescription/1`, `add_item/2`, `update_item/2`, `remove_item/1`, `lock_prescription/1`) in `lib/rx_generator/prescriptions.ex`
+- [x] T020 [US3] Connect `RxGeneratorWeb.PrescriptionLive` to persist draft prescription items to SQLite instead of in-memory simple maps in `lib/rx_generator_web/live/prescription_live.ex`
+- [x] T021 [US3] Verify draft reload and soft archival persistence in `test/rx_generator/prescriptions/persistent_drafts_test.exs`
 
 **Checkpoint**: All three user stories are functional and persistently stored in SQLite.
 

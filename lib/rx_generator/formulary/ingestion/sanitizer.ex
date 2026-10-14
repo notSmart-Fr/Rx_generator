@@ -41,7 +41,14 @@ defmodule RxGenerator.Formulary.Ingestion.Sanitizer do
       :skip
     else
       brand_name = get_field(row, ["Trade Name", :brand_name, "brand_name"]) || ""
-      raw_generic = get_field(row, ["Generic Name With Strength", :generic_name_with_strength, "generic_name_with_strength"]) || ""
+
+      raw_generic =
+        get_field(row, [
+          "Generic Name With Strength",
+          :generic_name_with_strength,
+          "generic_name_with_strength"
+        ]) || ""
+
       manufacturer = get_field(row, ["Company", :manufacturer, "manufacturer"]) || ""
       dgda_reg_no = get_field(row, ["DAR No", :dgda_reg_no, "dgda_reg_no"])
 
@@ -84,6 +91,7 @@ defmodule RxGenerator.Formulary.Ingestion.Sanitizer do
   """
   @spec split_generic_and_strength(String.t()) :: {String.t(), String.t()}
   def split_generic_and_strength(""), do: {"", "As formulated"}
+
   def split_generic_and_strength(raw_text) when is_binary(raw_text) do
     cleaned = clean_text(raw_text)
 
@@ -116,7 +124,8 @@ defmodule RxGenerator.Formulary.Ingestion.Sanitizer do
             [_, molecule, strength] ->
               trimmed_molecule = clean_text(molecule)
               # Molecule must not be empty and must start with letters
-              if String.length(trimmed_molecule) > 0 and not Regex.match?(~r/^\d/, trimmed_molecule) do
+              if String.length(trimmed_molecule) > 0 and
+                   not Regex.match?(~r/^\d/, trimmed_molecule) do
                 {:ok, trimmed_molecule, clean_text(strength)}
               else
                 :error
@@ -164,6 +173,7 @@ defmodule RxGenerator.Formulary.Ingestion.Sanitizer do
   end
 
   defp clean_text(nil), do: ""
+
   defp clean_text(str) when is_binary(str) do
     str
     |> String.trim()

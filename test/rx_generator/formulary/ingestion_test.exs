@@ -39,6 +39,7 @@ defmodule RxGenerator.Formulary.IngestionTest do
 
       # 1. Assert non-numerical formulation (e.g. Oral Rehydration Salt) handled gracefully
       require Ash.Query
+
       ors =
         DrugCatalogItem
         |> Ash.Query.filter(brand_name == "ORSaline-N")
@@ -86,11 +87,17 @@ defmodule RxGenerator.Formulary.IngestionTest do
       end
 
       # 5. Assert bulk raw chemicals were NOT inserted
-      for bulk_name <- ["Zinc Sulphate Monohydrate BP", "Acetone BP (API)", "Raw Solvent Drum", "Industrial Bulk API", "Raw Compound Powder"] do
+      for bulk_name <- [
+            "Zinc Sulphate Monohydrate BP",
+            "Acetone BP (API)",
+            "Raw Solvent Drum",
+            "Industrial Bulk API",
+            "Raw Compound Powder"
+          ] do
         assert nil ==
-          DrugCatalogItem
-          |> Ash.Query.filter(brand_name == ^bulk_name)
-          |> Ash.read_one!()
+                 DrugCatalogItem
+                 |> Ash.Query.filter(brand_name == ^bulk_name)
+                 |> Ash.read_one!()
       end
 
       # 6. Assert FTS5 virtual table was rebuilt atomically and returns search results

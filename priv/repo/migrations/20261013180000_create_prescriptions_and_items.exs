@@ -18,14 +18,22 @@ defmodule RxGenerator.Repo.Migrations.CreatePrescriptionsAndItems do
       add :updated_at, :utc_datetime_usec, null: false
     end
 
-    create unique_index(:prescriptions, [:rx_number], name: "prescriptions_rx_number_unique_index")
+    create unique_index(:prescriptions, [:rx_number],
+             name: "prescriptions_rx_number_unique_index"
+           )
+
     create index(:prescriptions, [:state], name: "prescriptions_state_index")
 
     # 2. Prescription Items Line Items Table
     create table(:prescription_items, primary_key: false) do
       add :id, :uuid, null: false, primary_key: true
-      add :prescription_id, references(:prescriptions, type: :uuid, on_delete: :delete_all), null: false
-      add :drug_catalog_item_id, references(:drug_catalog, type: :uuid, on_delete: :nothing), null: false
+
+      add :prescription_id, references(:prescriptions, type: :uuid, on_delete: :delete_all),
+        null: false
+
+      add :drug_catalog_item_id, references(:drug_catalog, type: :uuid, on_delete: :nothing),
+        null: false
+
       add :brand_name_snapshot, :text, null: false
       add :generic_name_snapshot, :text, null: false
       add :dosage_form_snapshot, :text, null: false
@@ -41,19 +49,40 @@ defmodule RxGenerator.Repo.Migrations.CreatePrescriptionsAndItems do
       add :updated_at, :utc_datetime_usec, null: false
     end
 
-    create index(:prescription_items, [:prescription_id], name: "prescription_items_prescription_id_index")
-    create index(:prescription_items, [:drug_catalog_item_id], name: "prescription_items_drug_catalog_item_id_index")
-    create index(:prescription_items, [:archived_at], name: "prescription_items_archived_at_index")
+    create index(:prescription_items, [:prescription_id],
+             name: "prescription_items_prescription_id_index"
+           )
+
+    create index(:prescription_items, [:drug_catalog_item_id],
+             name: "prescription_items_drug_catalog_item_id_index"
+           )
+
+    create index(:prescription_items, [:archived_at],
+             name: "prescription_items_archived_at_index"
+           )
   end
 
   def down do
-    drop_if_exists index(:prescription_items, [:archived_at], name: "prescription_items_archived_at_index")
-    drop_if_exists index(:prescription_items, [:drug_catalog_item_id], name: "prescription_items_drug_catalog_item_id_index")
-    drop_if_exists index(:prescription_items, [:prescription_id], name: "prescription_items_prescription_id_index")
+    drop_if_exists index(:prescription_items, [:archived_at],
+                     name: "prescription_items_archived_at_index"
+                   )
+
+    drop_if_exists index(:prescription_items, [:drug_catalog_item_id],
+                     name: "prescription_items_drug_catalog_item_id_index"
+                   )
+
+    drop_if_exists index(:prescription_items, [:prescription_id],
+                     name: "prescription_items_prescription_id_index"
+                   )
+
     drop table(:prescription_items)
 
     drop_if_exists index(:prescriptions, [:state], name: "prescriptions_state_index")
-    drop_if_exists unique_index(:prescriptions, [:rx_number], name: "prescriptions_rx_number_unique_index")
+
+    drop_if_exists unique_index(:prescriptions, [:rx_number],
+                     name: "prescriptions_rx_number_unique_index"
+                   )
+
     drop table(:prescriptions)
   end
 end

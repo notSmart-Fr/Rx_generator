@@ -191,7 +191,10 @@ defmodule RxGenerator.Formulary.SearchPresentationTest do
 
   describe "normalize_form/1 property-based resilience" do
     property "never crashes on arbitrary string or atom inputs" do
-      check all input <- StreamData.one_of([StreamData.string(:printable), StreamData.atom(:alphanumeric)]) do
+      check all(
+              input <-
+                StreamData.one_of([StreamData.string(:printable), StreamData.atom(:alphanumeric)])
+            ) do
         # Invariant: Must return a canonical string (e.g., "Tablet", "Syrup") or nil, NEVER crash
         result = Search.normalize_form(input)
         assert is_nil(result) or is_binary(result)

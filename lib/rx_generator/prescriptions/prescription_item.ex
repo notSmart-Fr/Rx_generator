@@ -2,20 +2,29 @@ defmodule RxGenerator.Prescriptions.PrescriptionItem do
   use Ash.Resource,
     otp_app: :rx_generator,
     domain: RxGenerator.Prescriptions,
-    data_layer: Ash.DataLayer.Simple
+    data_layer: AshSqlite.DataLayer,
+    extensions: [AshArchival.Resource]
+
+  sqlite do
+    table "prescription_items"
+    repo RxGenerator.Repo
+  end
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:read]
 
     create :create do
       primary? true
+      upsert? false
 
       accept [
+        :prescription_id,
         :drug_catalog_item_id,
         :brand_name_snapshot,
         :generic_name_snapshot,
         :dosage_form_snapshot,
         :strength_snapshot,
+        :is_controlled_snapshot,
         :dosage_matrix,
         :duration_expression,
         :timing_instruction,
@@ -24,15 +33,21 @@ defmodule RxGenerator.Prescriptions.PrescriptionItem do
         :display_order
       ]
     end
+
+    destroy :destroy do
+      primary? true
+      require_atomic? false
+      # AshArchival.Resource handles soft-deletion via archived_at
+    end
+  end
+
+  validations do
+    validate {RxGenerator.Prescriptions.Validations.ParentIsDraft, []},
+      on: [:create, :update, :destroy]
   end
 
   attributes do
     uuid_primary_key :id
-
-    attribute :drug_catalog_item_id, :uuid do
-      allow_nil? false
-      public? true
-    end
 
     attribute :brand_name_snapshot, :string do
       allow_nil? false
@@ -51,6 +66,12 @@ defmodule RxGenerator.Prescriptions.PrescriptionItem do
 
     attribute :strength_snapshot, :string do
       allow_nil? false
+      public? true
+    end
+
+    attribute :is_controlled_snapshot, :boolean do
+      allow_nil? false
+      default false
       public? true
     end
 
@@ -86,5 +107,17 @@ defmodule RxGenerator.Prescriptions.PrescriptionItem do
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :prescription, RxGenerator.Prescriptions.Prescription do
+      allow_nil? false
+      attribute_writable? true
+    end
+
+    belongs_to :drug_catalog_item, RxGenerator.Formulary.DrugCatalogItem do
+      allow_nil? false
+      attribute_writable? true
+    end
   end
 end

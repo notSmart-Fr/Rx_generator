@@ -160,5 +160,22 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
       assert_push_event(view, "set_omnibar_value", %{value: val})
       assert val =~ "Napa Extra"
     end
+
+    test "persists draft in SQLite and restores canvas on fresh browser mount (F5 / reload)", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      view
+      |> form("#omnibar-form", %{"query" => "napa xtra 1+0+1 5d pc"})
+      |> render_submit()
+
+      assert render(view) =~ "Napa Extra"
+
+      # Simulate a full page refresh / new LiveView connection
+      {:ok, view2, _html} = live(conn, "/prescriptions/new")
+      assert render(view2) =~ "Napa Extra"
+      assert has_element?(view2, "#rx-item-0")
+    end
   end
 end
