@@ -39,7 +39,6 @@ defmodule RxGeneratorWeb.PrescriptionLive do
           candidates={@candidates}
           highlighted_index={@highlighted_index}
         />
-
         <.prescription_canvas
           id="prescription-canvas"
           items={@items}
