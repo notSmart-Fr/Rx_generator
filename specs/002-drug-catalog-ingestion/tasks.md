@@ -10,8 +10,8 @@
 
 **Purpose**: Project initialization, environment validation, and module structure
 
-- [ ] T001 Verify project environment runtime alignment (`Elixir 1.20.4, Erlang/OTP 29`) and compile dependencies in `mix.exs`
-- [ ] T002 [P] Create directory structure for ingestion, controlled drug schedules, and tests in `lib/rx_generator/formulary/ingestion/` and `test/rx_generator/`
+- [x] T001 Verify project environment runtime alignment (`Elixir 1.20.4, Erlang/OTP 29`) and compile dependencies in `mix.exs`
+- [x] T002 [P] Create directory structure for ingestion, controlled drug schedules, and tests in `lib/rx_generator/formulary/ingestion/` and `test/rx_generator/`
 
 ---
 
@@ -21,10 +21,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Create Ecto SQLite migration for `prescriptions` and `prescription_items` in `priv/repo/migrations/20261013180000_create_prescriptions_and_items.exs`
-- [ ] T004 Run and verify database migration via `mix ecto.migrate` to ensure schema tables and indexes exist in `priv/repo/migrations/`
-- [ ] T005 [P] Create controlled substances reference list according to the Bangladesh Narcotics Control Act 2018 in `lib/rx_generator/formulary/ingestion/controlled_drugs.ex`
-- [ ] T006 [P] Create test fixtures and sample CSV helper in `test/support/ingestion_fixtures.ex`
+- [x] T003 Create Ecto SQLite migration for `prescriptions` and `prescription_items` in `priv/repo/migrations/20261013180000_create_prescriptions_and_items.exs`
+- [x] T004 Run and verify database migration via `mix ecto.migrate` to ensure schema tables and indexes exist in `priv/repo/migrations/`
+- [x] T005 [P] Create controlled substances reference list according to the Bangladesh Narcotics Control Act 2018 in `lib/rx_generator/formulary/ingestion/controlled_drugs.ex`
+- [x] T006 [P] Create test fixtures and sample CSV helper in `test/support/ingestion_fixtures.ex`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel.
 
