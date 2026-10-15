@@ -60,7 +60,8 @@ defmodule RxGenerator.Prescriptions.ManifestFuzzTest do
             items <-
               StreamData.bind(StreamData.constant(item_count), fn count ->
                 StreamData.fixed_list(Enum.map(0..(count - 1), &item_generator/1))
-              end)
+              end),
+            max_runs: 500
           ) do
       # Manifest compiled from original order
       manifest_1 = Manifest.compile(rx, items)
@@ -80,7 +81,8 @@ defmodule RxGenerator.Prescriptions.ManifestFuzzTest do
             items <-
               StreamData.bind(StreamData.constant(item_count), fn count ->
                 StreamData.fixed_list(Enum.map(0..(count - 1), &item_generator/1))
-              end)
+              end),
+            max_runs: 500
           ) do
       manifest = Manifest.compile(rx, items)
 
@@ -103,7 +105,8 @@ defmodule RxGenerator.Prescriptions.ManifestFuzzTest do
               StreamData.bind(StreamData.constant(item_count), fn count ->
                 StreamData.fixed_list(Enum.map(0..(count - 1), &item_generator/1))
               end),
-            mutation <- StreamData.string(:printable, min_length: 1)
+            mutation <- StreamData.string(:printable, min_length: 1),
+            max_runs: 500
           ) do
       manifest = Manifest.compile(rx, items)
       {:ok, sig} = Crypto.sign_manifest(manifest, priv)

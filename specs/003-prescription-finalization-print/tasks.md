@@ -127,9 +127,9 @@
 
 **Purpose**: Property-based fuzz verification, end-to-end quickstart execution, and constitutional compliance review.
 
-- [ ] T039 Execute property fuzz test suite across 500 iterations via `mix test test/rx_generator/prescriptions/manifest_fuzz_test.exs` confirming zero regressions in determinism and tamper detection
-- [ ] T040 [P] Run end-to-end validation scenarios documented in `specs/003-prescription-finalization-print/quickstart.md`
-- [ ] T041 Run `mix precommit` (`compile --warnings-as-errors`, `deps.unlock --unused`, `format`, `test`) to guarantee clean build and zero warnings
+- [X] T039 Execute property fuzz test suite across 500 iterations via `mix test test/rx_generator/prescriptions/manifest_fuzz_test.exs` confirming zero regressions in determinism and tamper detection
+- [X] T040 [P] Run end-to-end validation scenarios documented in `specs/003-prescription-finalization-print/quickstart.md`
+- [X] T041 Run `mix precommit` (`compile --warnings-as-errors`, `deps.unlock --unused`, `format`, `test`) to guarantee clean build and zero warnings
 
 ---
 
