@@ -14,6 +14,7 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       end
 
     items = if draft, do: draft.items || [], else: []
+    qr_svg = compute_qr_svg(draft)
 
     {:ok,
      assign(socket,
@@ -23,7 +24,8 @@ defmodule RxGeneratorWeb.PrescriptionLive do
        candidates: [],
        highlighted_index: 0,
        draft: draft,
-       items: items
+       items: items,
+       qr_svg: qr_svg
      )}
   end
 
@@ -31,17 +33,23 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-zinc-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-4xl mx-auto">
-        <.omnibar
-          id="prescription-omnibar"
-          query={@query}
-          error={@error}
-          candidates={@candidates}
-          highlighted_index={@highlighted_index}
-        />
+      <div class="max-w-4xl mx-auto space-y-6">
+        <%= if @draft && @draft.state != :locked do %>
+          <.omnibar
+            id="prescription-omnibar"
+            query={@query}
+            error={@error}
+            candidates={@candidates}
+            highlighted_index={@highlighted_index}
+          />
+        <% end %>
         <.prescription_canvas
           id="prescription-canvas"
           items={@items}
+          state={if(@draft, do: @draft.state, else: :draft)}
+          rx_number={if(@draft, do: @draft.rx_number, else: nil)}
+          prescriber_bmdc_no={if(@draft, do: @draft.prescriber_bmdc_no, else: nil)}
+          qr_svg={@qr_svg}
         />
       </div>
     </div>
@@ -123,6 +131,62 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       commit_parsed_query(trimmed, query, socket)
     end
   end
+
+  @impl true
+  def handle_event("trigger_print", _params, socket) do
+    if socket.assigns.draft && socket.assigns.draft.state == :locked do
+      _ = RxGenerator.Printing.Spooler.spool(socket.assigns.draft, copies: 1)
+      {:noreply, push_event(socket, "print_prescription", %{})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("finalize_prescription", _params, socket) do
+    case socket.assigns.draft do
+      nil ->
+        {:noreply, put_flash(socket, :error, "No active draft prescription found")}
+
+      draft ->
+        case Prescriptions.finalize_prescription(draft) do
+          {:ok, locked_rx} ->
+            qr_svg = compute_qr_svg(locked_rx)
+
+            {:noreply,
+             socket
+             |> assign(draft: locked_rx, qr_svg: qr_svg, error: nil)
+             |> put_flash(
+               :info,
+               "Prescription #{locked_rx.rx_number} finalized and permanently locked."
+             )}
+
+          {:error, %Ash.Error.Invalid{errors: errors}} ->
+            error_msg =
+              Enum.map_join(errors, ", ", fn
+                %{message: msg} -> msg
+                other -> inspect(other)
+              end)
+
+            {:noreply, put_flash(socket, :error, "Failed to finalize: #{error_msg}")}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, "Failed to finalize prescription")}
+        end
+    end
+  end
+
+  defp compute_qr_svg(%{state: :locked, canonical_manifest: manifest, signature: sig})
+       when is_binary(manifest) and is_binary(sig) do
+    payload = RxGenerator.Prescriptions.Crypto.build_qr_payload(manifest, sig)
+
+    case RxGenerator.Prescriptions.QRCode.generate_svg(payload) do
+      {:ok, svg} -> svg
+      _ -> nil
+    end
+  end
+
+  defp compute_qr_svg(_), do: nil
 
   defp calculate_new_index("down", current, count), do: rem(current + 1, count)
   defp calculate_new_index("up", 0, count), do: count - 1

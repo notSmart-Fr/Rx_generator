@@ -594,6 +594,10 @@ defmodule RxGeneratorWeb.CoreComponents do
   """
   attr :id, :string, default: "prescription-canvas"
   attr :items, :list, default: []
+  attr :state, :atom, default: :draft
+  attr :rx_number, :string, default: nil
+  attr :prescriber_bmdc_no, :string, default: nil
+  attr :qr_svg, :string, default: nil
 
   def prescription_canvas(assigns) do
     ~H"""
@@ -603,9 +607,23 @@ defmodule RxGeneratorWeb.CoreComponents do
     >
       <div class="border-b border-zinc-200 pb-4 mb-6 flex justify-between items-center">
         <div>
-          <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
+          <div class="flex items-center gap-3">
+            <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
+            <%= if @state == :locked do %>
+              <span
+                id="prescription-locked-badge"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300"
+              >
+                <.icon name="hero-lock-closed" class="w-3.5 h-3.5" /> FINALIZED & IMMUTABLE
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                DRAFT
+              </span>
+            <% end %>
+          </div>
           <p class="text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
-            Clinical Order Record
+            Clinical Order Record {if @rx_number, do: "• #{@rx_number}"}
           </p>
         </div>
         <div class="text-right text-xs text-zinc-400">
@@ -626,15 +644,15 @@ defmodule RxGeneratorWeb.CoreComponents do
           <div
             :for={{item, index} <- Enum.with_index(@items)}
             id={"rx-item-#{index}"}
-            class="p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors"
+            class="rx-item-row p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors"
           >
             <div class="flex items-baseline justify-between">
               <div>
                 <span class="text-xs font-bold text-zinc-400 mr-2">{index + 1}.</span>
-                <span class="text-lg font-black uppercase tracking-wide text-zinc-900">
+                <span class="generic-name-print text-lg font-black uppercase tracking-wide text-zinc-900">
                   {String.upcase(item.generic_name_snapshot)}
                 </span>
-                <span class="ml-2 text-sm font-semibold text-zinc-600">
+                <span class="brand-name-print ml-2 text-sm font-semibold text-zinc-600">
                   ({item.brand_name_snapshot})
                 </span>
               </div>
@@ -668,6 +686,69 @@ defmodule RxGeneratorWeb.CoreComponents do
             </div>
           </div>
         <% end %>
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-zinc-200 flex justify-between items-center print:hidden">
+        <div>
+          <%= if @state == :locked do %>
+            <div class="flex items-center gap-4">
+              <%= if @qr_svg do %>
+                <div
+                  id="prescription-qr-code"
+                  class="w-24 h-24 p-1.5 bg-white border border-zinc-200 rounded-xl shadow-inner flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full"
+                >
+                  {Phoenix.HTML.raw(@qr_svg)}
+                </div>
+              <% end %>
+              <div class="space-y-1">
+                <p class="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <.icon name="hero-shield-check" class="w-4 h-4 text-emerald-600" />
+                  Tamper-Evident Ed25519 Seal
+                </p>
+                <p class="text-[11px] text-zinc-500">
+                  Prescriber BM&DC:
+                  <span class="font-mono font-semibold text-zinc-700">{@prescriber_bmdc_no ||
+                    "A-12345"}</span>
+                </p>
+                <p class="text-[10px] text-zinc-400">
+                  Air-gapped verification against local registry snapshot.
+                </p>
+              </div>
+            </div>
+          <% else %>
+            <p class="text-xs text-zinc-500">
+              Review medications carefully before sealing prescription.
+            </p>
+          <% end %>
+        </div>
+        <div>
+          <%= if @state == :locked do %>
+            <button
+              id="print-prescription-btn"
+              type="button"
+              phx-click="trigger_print"
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm transition-all cursor-pointer"
+            >
+              <.icon name="hero-printer" class="w-4 h-4" /> Print Prescription
+            </button>
+          <% else %>
+            <button
+              id="finalize-prescription-btn"
+              type="button"
+              phx-click="finalize_prescription"
+              disabled={@items == []}
+              class={[
+                "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all",
+                if(@items == [],
+                  do: "bg-zinc-200 text-zinc-400 cursor-not-allowed",
+                  else: "bg-zinc-900 text-white hover:bg-zinc-800 active:scale-95 cursor-pointer"
+                )
+              ]}
+            >
+              <.icon name="hero-lock-closed" class="w-4 h-4" /> Finalize Prescription
+            </button>
+          <% end %>
+        </div>
       </div>
     </div>
     """

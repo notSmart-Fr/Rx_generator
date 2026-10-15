@@ -37,6 +37,12 @@ defmodule RxGenerator.Prescriptions.PrescriptionItem do
       ]
     end
 
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:dosage_matrix, :duration_expression, :timing_instruction, :display_order]
+    end
+
     destroy :destroy do
       primary? true
       require_atomic? false

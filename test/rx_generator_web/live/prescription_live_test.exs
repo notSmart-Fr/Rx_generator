@@ -25,8 +25,8 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
       |> form("#omnibar-form", %{"query" => "napa xtra 1+0+1 5d pc"})
       |> render_submit()
 
-      # Omnibar input clears
-      assert element(view, "#prescription-omnibar") |> render() =~ "value=\"\""
+      # Resilient attribute check for cleared input
+      assert has_element?(view, "#prescription-omnibar[value='']")
 
       # Canvas renders committed item
       assert has_element?(view, "#prescription-canvas")
@@ -54,6 +54,15 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
 
       assert render(view) =~ "Drug not found in DGDA catalog"
       refute has_element?(view, "#rx-item-0")
+    end
+
+    test "repeated backspace on empty canvas does not raise crashes", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      render_hook(view, "recall_last_item", %{})
+
+      refute has_element?(view, "#rx-item-0")
+      assert has_element?(view, "#prescription-omnibar")
     end
   end
 
@@ -176,6 +185,38 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
       {:ok, view2, _html} = live(conn, "/prescriptions/new")
       assert render(view2) =~ "Napa Extra"
       assert has_element?(view2, "#rx-item-0")
+    end
+  end
+
+  describe "User Story 1: Prescription Finalization & Canvas Locking" do
+    test "disables finalization button when canvas has zero medication items", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      assert has_element?(view, "#finalize-prescription-btn[disabled]")
+    end
+
+    test "finalizes draft prescription, locks canvas, and hides omnibar", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      # Add an item to enable finalization
+      view
+      |> form("#omnibar-form", %{"query" => "napa xtra 1+0+1 5d pc"})
+      |> render_submit()
+
+      assert has_element?(view, "#finalize-prescription-btn")
+      refute has_element?(view, "#finalize-prescription-btn[disabled]")
+      assert has_element?(view, "#prescription-omnibar")
+
+      # Click Finalize
+      element(view, "#finalize-prescription-btn") |> render_click()
+
+      # Canvas should now show locked badge, QR code SVG, and hide omnibar input
+      assert has_element?(view, "#prescription-locked-badge")
+      assert has_element?(view, "#prescription-qr-code")
+      refute has_element?(view, "#finalize-prescription-btn")
+      refute has_element?(view, "#prescription-omnibar")
+      assert render(view) =~ "FINALIZED &amp; IMMUTABLE"
+      assert render(view) =~ "Tamper-Evident Ed25519 Seal"
     end
   end
 end

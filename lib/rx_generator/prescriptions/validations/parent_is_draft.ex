@@ -11,7 +11,7 @@ defmodule RxGenerator.Prescriptions.Validations.ParentIsDraft do
   def validate(changeset, _opts, _context) do
     prescription_id =
       Ash.Changeset.get_attribute(changeset, :prescription_id) ||
-        (changeset.data && changeset.data.prescription_id)
+        (is_map(changeset.data) && Map.get(changeset.data, :prescription_id))
 
     case prescription_id do
       nil ->

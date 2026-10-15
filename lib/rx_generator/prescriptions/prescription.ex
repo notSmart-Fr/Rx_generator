@@ -31,7 +31,48 @@ defmodule RxGenerator.Prescriptions.Prescription do
     end
 
     update :lock do
-      accept []
+      require_atomic? false
+      accept [:canonical_manifest, :signature, :finalized_at]
+
+      validate fn changeset, _context ->
+        items =
+          case Ash.Changeset.get_attribute(changeset, :items) do
+            nil ->
+              case changeset.data do
+                %{items: %Ash.NotLoaded{}} ->
+                  case Ash.load(changeset.data, :items) do
+                    {:ok, loaded} -> loaded.items || []
+                    _ -> []
+                  end
+
+                %{items: loaded_items} when is_list(loaded_items) ->
+                  loaded_items
+
+                _ ->
+                  []
+              end
+
+            list when is_list(list) ->
+              list
+          end
+
+        active_items = Enum.filter(items, &is_nil(&1.archived_at))
+
+        if active_items == [] do
+          {:error,
+           field: :items, message: "cannot finalize a prescription with zero active medications"}
+        else
+          :ok
+        end
+      end
+
+      change fn changeset, _context ->
+        case Ash.Changeset.get_attribute(changeset, :finalized_at) do
+          nil -> Ash.Changeset.change_attribute(changeset, :finalized_at, DateTime.utc_now())
+          _ -> changeset
+        end
+      end
+
       change transition_state(:locked)
     end
 
@@ -59,6 +100,21 @@ defmodule RxGenerator.Prescriptions.Prescription do
       public? true
     end
 
+    attribute :canonical_manifest, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :signature, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :finalized_at, :utc_datetime_usec do
+      allow_nil? true
+      public? true
+    end
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -69,5 +125,9 @@ defmodule RxGenerator.Prescriptions.Prescription do
       filter expr(is_nil(archived_at))
       sort display_order: :asc, inserted_at: :asc
     end
+  end
+
+  identities do
+    identity :unique_rx_number, [:rx_number]
   end
 end

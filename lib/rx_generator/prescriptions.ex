@@ -8,6 +8,8 @@ defmodule RxGenerator.Prescriptions do
   require Ash.Query
   alias RxGenerator.Formulary.DrugCatalogItem
   alias RxGenerator.Prescriptions.BengaliTranslator
+  alias RxGenerator.Prescriptions.Crypto
+  alias RxGenerator.Prescriptions.Manifest
   alias RxGenerator.Prescriptions.Prescription
   alias RxGenerator.Prescriptions.PrescriptionItem
 
@@ -139,12 +141,64 @@ defmodule RxGenerator.Prescriptions do
   end
 
   @doc """
+  Finalizes a draft prescription with atomic locking, cryptographic manifest generation,
+  and Ed25519 offline signing.
+  """
+  def finalize_prescription(%Prescription{} = prescription, attrs \\ %{}) do
+    prescription
+    |> Ash.load(:items)
+    |> case do
+      {:ok, loaded_rx} ->
+        # Determine finalized_at timestamp (preserving passed value if present)
+        finalized_at =
+          attrs[:finalized_at] || Map.get(attrs, "finalized_at") || DateTime.utc_now()
+
+        active_items = Enum.filter(loaded_rx.items || [], &is_nil(&1.archived_at))
+
+        if active_items == [] do
+          loaded_rx
+          |> Ash.Changeset.for_update(:lock, attrs)
+          |> Ash.update()
+        else
+          rx_for_manifest = %{loaded_rx | finalized_at: finalized_at}
+          manifest_string = Manifest.compile(rx_for_manifest, active_items)
+
+          # Retrieve signing key and sign manifest
+          with {:ok, {_pub_key, priv_key}} <- Crypto.get_or_bootstrap_signing_key(),
+               {:ok, signature} <- Crypto.sign_manifest(manifest_string, priv_key) do
+            lock_params =
+              attrs
+              |> Map.put(:canonical_manifest, manifest_string)
+              |> Map.put(:signature, signature)
+              |> Map.put(:finalized_at, finalized_at)
+
+            loaded_rx
+            |> Ash.Changeset.for_update(:lock, lock_params)
+            |> Ash.update()
+          else
+            {:error, reason} ->
+              {:error, reason}
+          end
+        end
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
   Transitions a draft prescription to :locked state.
   """
-  def lock_prescription(%Prescription{} = prescription) do
-    prescription
-    |> Ash.Changeset.for_update(:lock, %{})
-    |> Ash.update()
+  def lock_prescription(%Prescription{} = prescription, attrs \\ %{}) do
+    finalize_prescription(prescription, attrs)
+  end
+
+  @doc """
+  Verifies a prescription QR payload offline against the local provider registry.
+  Returns `{:ok, %VerificationResult{status: :valid}}` or `{:error, %VerificationResult{}}`.
+  """
+  def verify_prescription_payload(payload) when is_binary(payload) do
+    Crypto.verify_qr_payload(payload)
   end
 
   defp generate_rx_number do
