@@ -8,9 +8,9 @@
 
 **Purpose**: Project initialization, neural dependencies, and test double configuration.
 
-- [ ] T001 Add neural runtime dependencies `{:nx, "~> 0.9"}`, `{:bumblebee, "~> 0.6"}`, and `{:exla, "~> 0.9"}` to `mix.exs`
-- [ ] T002 Configure EXLA / Nx default backend and bundled model path `"priv/models/embedding_gemma_2"` in `config/config.exs` and `config/test.exs`
-- [ ] T003 [P] Implement deterministic test double backend in `test/support/test_neural_backend.ex` generating reproducible 256-D float32 vectors for fast offline test execution
+- [x] T001 Add neural runtime dependencies `{:nx, "~> 0.9"}`, `{:bumblebee, "~> 0.6"}`, and `{:exla, "~> 0.9"}` to `mix.exs`
+- [x] T002 Configure EXLA / Nx default backend and bundled model path `"priv/models/embedding_gemma_2"` in `config/config.exs` and `config/test.exs`
+- [x] T003 [P] Implement deterministic test double backend in `test/support/test_neural_backend.ex` generating reproducible 256-D float32 vectors for fast offline test execution
 
 ---
 
@@ -20,11 +20,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Create database migration in `priv/repo/migrations/20261015160000_create_drug_catalog_vectors.exs` defining table `drug_catalog_vectors` with columns `id TEXT PRIMARY KEY NOT NULL`, `drug_catalog_item_id TEXT NOT NULL REFERENCES drug_catalog(id) ON DELETE CASCADE`, `embedding BLOB NOT NULL`, `dimension INTEGER NOT NULL DEFAULT 256 CHECK (dimension = 256)`, `model_version TEXT NOT NULL`, and unique index `drug_catalog_vectors_item_id_idx ON drug_catalog_vectors(drug_catalog_item_id)`
-- [ ] T005 [P] Implement `DrugCatalogVector` Ash resource in `lib/rx_generator/formulary/drug_catalog_vector.ex` with attribute `:embedding` validated as `"must be exactly 1024 bytes (256 float32 values)"`, `:dimension` defaulting to `256`, `:model_version` defaulting to `"embedding_gemma_2_270m_mrl256"`, and `belongs_to :drug_catalog_item`
-- [ ] T006 Register `DrugCatalogVector` resource in `lib/rx_generator/formulary.ex` domain definition
-- [ ] T007 Implement vector storage query module in `lib/rx_generator/formulary/vector_store.ex` supporting cosine distance search over 1024-byte float32 blobs via SQLite queries and `Nx.dot/2` SIMD fallback
-- [ ] T008 [P] Write unit tests in `test/rx_generator/formulary/vector_store_test.exs` asserting 256-D cosine similarity calculations, top-K ranking, and empty candidate handling
+- [x] T004 Create database migration in `priv/repo/migrations/20261015160000_create_drug_catalog_vectors.exs` defining table `drug_catalog_vectors` with columns `id TEXT PRIMARY KEY NOT NULL`, `drug_catalog_item_id TEXT NOT NULL REFERENCES drug_catalog(id) ON DELETE CASCADE`, `embedding BLOB NOT NULL`, `dimension INTEGER NOT NULL DEFAULT 256 CHECK (dimension = 256)`, `model_version TEXT NOT NULL`, and unique index `drug_catalog_vectors_item_id_idx ON drug_catalog_vectors(drug_catalog_item_id)`
+- [x] T005 [P] Implement `DrugCatalogVector` Ash resource in `lib/rx_generator/formulary/drug_catalog_vector.ex` with attribute `:embedding` validated as `"must be exactly 1024 bytes (256 float32 values)"`, `:dimension` defaulting to `256`, `:model_version` defaulting to `"embedding_gemma_2_270m_mrl256"`, and `belongs_to :drug_catalog_item`
+- [x] T006 Register `DrugCatalogVector` resource in `lib/rx_generator/formulary.ex` domain definition
+- [x] T007 Implement vector storage query module in `lib/rx_generator/formulary/vector_store.ex` supporting cosine distance search over 1024-byte float32 blobs via SQLite queries and `Nx.dot/2` SIMD fallback
+- [x] T008 [P] Write unit tests in `test/rx_generator/formulary/vector_store_test.exs` asserting 256-D cosine similarity calculations, top-K ranking, and empty candidate handling
 
 **Checkpoint**: Foundation ready - vector table and low-level similarity store operational.
 

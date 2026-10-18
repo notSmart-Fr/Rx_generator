@@ -14,5 +14,7 @@ defmodule RxGenerator.Formulary do
       define :list_drugs, action: :read
       define :get_drug_by_id, action: :by_id, args: [:id]
     end
+
+    resource RxGenerator.Formulary.DrugCatalogVector
   end
 end

@@ -93,7 +93,9 @@ defmodule RxGenerator.MixProject do
       {:ex_doc, "~> 0.40", only: :dev, runtime: false, warn_if_outdated: true},
       {:stream_data, "~> 1.4"},
       {:eqrcode, "~> 0.1.10"},
-      {:mox, "~> 1.2", only: :test}
+      {:mox, "~> 1.2", only: :test},
+      {:nx, "~> 1.0"},
+      {:bumblebee, "~> 0.8"}
     ]
   end
 

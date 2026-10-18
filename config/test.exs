@@ -27,6 +27,11 @@ config :rx_generator, :print_spooler, RxGenerator.Printing.MockSpooler
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
+config :rx_generator, RxGenerator.Formulary.NeuralWorker,
+  backend: RxGenerator.Support.TestNeuralBackend,
+  model_path: Path.expand("../priv/models/embedding_gemma_2", __DIR__),
+  dimension: 256
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 
