@@ -73,10 +73,61 @@ defmodule RxGenerator.Formulary.Search do
     limit = Keyword.get(opts, :limit, 10)
     raw_form = Keyword.get(opts, :form) || Keyword.get(opts, :dosage_form)
     canonical_form = normalize_form(raw_form)
+    min_similarity = Keyword.get(opts, :min_similarity, 0.65)
 
-    case build_match_expression(query) do
-      nil -> []
-      expr -> execute_search(expr, canonical_form, limit)
+    fts_results =
+      case build_match_expression(query) do
+        nil -> []
+        expr -> execute_search(expr, canonical_form, limit)
+      end
+
+    results =
+      if fts_results != [] do
+        :telemetry.execute(
+          [:rx_generator, :formulary, :search],
+          %{count: length(fts_results)},
+          %{tier: :fts5, query: query}
+        )
+
+        fts_results
+      else
+        fallback_results = run_vector_fallback(query, canonical_form, limit, min_similarity)
+
+        :telemetry.execute(
+          [:rx_generator, :formulary, :search],
+          %{count: length(fallback_results)},
+          %{tier: :vector, query: query}
+        )
+
+        fallback_results
+      end
+
+    Enum.uniq_by(results, & &1.id)
+  end
+
+  defp run_vector_fallback(query, canonical_form, limit, min_similarity) do
+    cleaned_query =
+      query
+      |> String.replace(~r/[*^"':()\-+]/, " ")
+      |> String.trim()
+
+    case RxGenerator.Formulary.NeuralWorker.vectorize(cleaned_query) do
+      {:ok, query_vec} when is_binary(query_vec) and byte_size(query_vec) == 1024 ->
+        case RxGenerator.Formulary.VectorStore.search(query_vec,
+               dosage_form: canonical_form,
+               limit: limit,
+               min_similarity: min_similarity
+             ) do
+          {:ok, matches} ->
+            item_ids = Enum.map(matches, & &1.drug_catalog_item_id)
+            load_items_by_uuids(item_ids)
+
+          _ ->
+            []
+        end
+
+      _ ->
+        []
     end
   end
 
@@ -131,19 +182,24 @@ defmodule RxGenerator.Formulary.Search do
     case Ecto.Adapters.SQL.query(Repo, sql, rowids) do
       {:ok, %{rows: id_rows}} ->
         uuids = Enum.map(id_rows, fn [uuid] -> uuid end)
-
-        items =
-          DrugCatalogItem
-          |> Ash.Query.filter(id in ^uuids)
-          |> Ash.read!()
-
-        # Maintain original FTS5 rank ordering
-        item_map = Map.new(items, &{&1.id, &1})
-        Enum.map(uuids, &Map.get(item_map, &1)) |> Enum.filter(& &1)
+        load_items_by_uuids(uuids)
 
       _ ->
         []
     end
+  end
+
+  defp load_items_by_uuids([]), do: []
+
+  defp load_items_by_uuids(uuids) do
+    items =
+      DrugCatalogItem
+      |> Ash.Query.filter(id in ^uuids)
+      |> Ash.read!()
+
+    # Maintain original rank ordering
+    item_map = Map.new(items, &{&1.id, &1})
+    Enum.map(uuids, &Map.get(item_map, &1)) |> Enum.filter(& &1)
   end
 
   @doc """

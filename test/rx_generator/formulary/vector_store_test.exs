@@ -1,5 +1,5 @@
 defmodule RxGenerator.Formulary.VectorStoreTest do
-  use RxGenerator.DataCase, async: true
+  use RxGenerator.DataCase, async: false
 
   alias RxGenerator.Formulary.DrugCatalogItem
   alias RxGenerator.Formulary.DrugCatalogVector

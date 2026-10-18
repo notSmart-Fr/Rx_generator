@@ -40,15 +40,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [P] [US1] Write test in `test/rx_generator/formulary/search_tier2_test.exs` asserting that `Search.run("aseclofen")` invokes Tier-2 vector fallback when Tier-1 FTS5 returns 0 matches and returns exact `DrugCatalogItem` records in under 15ms
-- [ ] T010 [P] [US1] Write test in `test/rx_generator/formulary/search_tier2_test.exs` asserting that clean queries with high FTS5 confidence ($\ge 0.85$) bypass Tier-2 vectorization completely in sub-2ms
+- [x] T009 [P] [US1] Write test in `test/rx_generator/formulary/search_tier2_test.exs` asserting that `Search.run("aseclofen")` invokes Tier-2 vector fallback when Tier-1 FTS5 returns 0 matches and returns exact `DrugCatalogItem` records in under 15ms
+- [x] T010 [P] [US1] Write test in `test/rx_generator/formulary/search_tier2_test.exs` asserting that clean queries with high FTS5 confidence ($\ge 0.85$) bypass Tier-2 vectorization completely in sub-2ms
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement query vectorization API in `lib/rx_generator/formulary/neural_worker.ex` returning `{:ok, <<float32, 256>>}` L2-normalized 1024-byte binary embedding truncated to 256 dimensions via Matryoshka slicing
-- [ ] T012 [US1] Update `RxGenerator.Formulary.Search.run/2` in `lib/rx_generator/formulary/search.ex` to check FTS5 match confidence and trigger `VectorStore.search/2` fallback when hits == 0 or confidence score < 0.85
-- [ ] T013 [US1] Implement deterministic candidate hydration in `lib/rx_generator/formulary/search.ex` ensuring 100% of returned items resolve to verified `drug_catalog` primary keys with zero generative text output (Article I)
-- [ ] T014 [US1] Enforce cosine similarity threshold floor of 0.65 in `lib/rx_generator/formulary/search.ex` pruning low-confidence nearest-neighbor noise
+- [x] T011 [US1] Implement query vectorization API in `lib/rx_generator/formulary/neural_worker.ex` returning `{:ok, <<float32, 256>>}` L2-normalized 1024-byte binary embedding truncated to 256 dimensions via Matryoshka slicing
+- [x] T012 [US1] Update `RxGenerator.Formulary.Search.run/2` in `lib/rx_generator/formulary/search.ex` to check FTS5 match confidence and trigger `VectorStore.search/2` fallback when hits == 0 or confidence score < 0.85
+- [x] T013 [US1] Implement deterministic candidate hydration in `lib/rx_generator/formulary/search.ex` ensuring 100% of returned items resolve to verified `drug_catalog` primary keys with zero generative text output (Article I)
+- [x] T014 [US1] Enforce cosine similarity threshold floor of 0.65 in `lib/rx_generator/formulary/search.ex` pruning low-confidence nearest-neighbor noise
 
 **Checkpoint**: User Story 1 complete and independently testable as MVP.
 
