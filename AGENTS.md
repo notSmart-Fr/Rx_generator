@@ -84,6 +84,9 @@ custom classes must fully style the input
 - Predicate function names should not start with `is_` and should end in a question mark. Names like `is_thing` should be reserved for guards
 - Elixir's builtin OTP primitives like `DynamicSupervisor` and `Registry`, require names in the child spec, such as `{DynamicSupervisor, name: MyApp.MyDynamicSup}`, then you can use `DynamicSupervisor.start_child(MyApp.MyDynamicSup, child_spec)`
 - Use `Task.async_stream(collection, callback, options)` for concurrent enumeration with back-pressure. The majority of times you will want to pass `timeout: :infinity` as option
+- **Enforce the BEAM "Let It Crash" philosophy for internal state and domain flows:**
+  - **Internal Domain & Process Core:** Never use `try/rescue` to handle business branches or trap unhandled exceptions. Model expected outcomes as tagged tuples (`{:ok, val} | {:error, reason}`) and let unexpected invariants crash the process so the supervisor can reinitialize clean state.
+  - **Adapter & System Boundaries:** Use `try/rescue` exclusively at system boundaries (e.g., legacy Erlang libraries, third-party parsers that raise, or `try ... after` resource cleanup) to adapt unhandled exceptions into tagged `{:error, reason}` tuples before they enter your domain logic. Never swallow errors silently (e.g. `rescue _ -> :ok`).
 
 ## Mix guidelines
 
