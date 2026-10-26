@@ -103,13 +103,13 @@
 
 ### Tests for User Story 4 (Strict TDD Red-First) ⚠️
 
-- [ ] T024 [P] [US4] Write unit tests in `test/rx_generator/formulary/ingestion/vectorizer_test.exs` asserting canonical semantic string formatting `"{brand_name} ({generic_name}) {dosage_form}"`, 256-D MRL prefix truncation, and L2 normalization
-- [ ] T025 [P] [US4] Write integration test in `test/mix/tasks/formulary_vectorize_test.exs` asserting `mix formulary.vectorize` populates `drug_catalog_vectors` with dimension 256 and byte_size 1024
+- [x] T024 [P] [US4] Write unit tests in `test/rx_generator/formulary/ingestion/vectorizer_test.exs` asserting canonical semantic string formatting `"{brand_name} ({generic_name}) {dosage_form}"`, 256-D MRL prefix truncation, and L2 normalization
+- [x] T025 [P] [US4] Write integration test in `test/mix/tasks/formulary_vectorize_test.exs` asserting `mix formulary.vectorize` populates `drug_catalog_vectors` with dimension 256 and byte_size 1024
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] Implement catalog embedding generator in `lib/rx_generator/formulary/ingestion/vectorizer.ex` with batched Nx inference (batch size 64) and MRL 256-D prefix slicing (`Nx.slice/3` + `Nx.LinAlg.norm/2`)
-- [ ] T027 [US4] Implement CLI Mix task in `lib/mix/tasks/formulary.vectorize.ex` supporting `--batch-size`, `--force`, and `--quiet` flags with transactional upsert into `drug_catalog_vectors`
+- [x] T026 [US4] Implement catalog embedding generator in `lib/rx_generator/formulary/ingestion/vectorizer.ex` with batched Nx inference (batch size 64) and MRL 256-D prefix slicing (`Nx.slice/3` + `Nx.LinAlg.norm/2`)
+- [x] T027 [US4] Implement CLI Mix task in `lib/mix/tasks/formulary.vectorize.ex` supporting `--batch-size`, `--force`, and `--quiet` flags with transactional upsert into `drug_catalog_vectors`
 
 **Checkpoint**: Catalog vectorization pipeline fully operational.
 
