@@ -15,6 +15,7 @@ defmodule RxGenerator.Application do
       {DNSCluster, query: Application.get_env(:rx_generator, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: RxGenerator.PubSub},
       RxGenerator.Prescriptions.ProviderRegistry,
+      {RxGenerator.Formulary.NeuralWorker, []},
       # Start to serve requests, typically the last entry
       RxGeneratorWeb.Endpoint
     ]

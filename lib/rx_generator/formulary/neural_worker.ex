@@ -10,7 +10,8 @@ defmodule RxGenerator.Formulary.NeuralWorker do
   @dimension 256
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: @name)
+    name = Keyword.get(opts, :name, @name)
+    GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc """
@@ -66,7 +67,9 @@ defmodule RxGenerator.Formulary.NeuralWorker do
       backend: Keyword.get(merged_opts, :backend),
       model_path: Keyword.get(merged_opts, :model_path),
       dimension: Keyword.get(merged_opts, :dimension, @dimension),
-      serving: nil
+      serving: nil,
+      notify_pid: Keyword.get(merged_opts, :notify_pid),
+      on_warmup: Keyword.get(merged_opts, :on_warmup)
     }
 
     {:ok, state, {:continue, :warmup}}
@@ -110,11 +113,15 @@ defmodule RxGenerator.Formulary.NeuralWorker do
   end
 
   defp do_warmup(state) do
-    if state.backend do
-      %{state | status: :ready}
-    else
-      %{state | status: :ready}
+    if is_function(state[:on_warmup], 0) do
+      state.on_warmup.()
     end
+
+    if pid = state[:notify_pid] do
+      send(pid, {:warmup_completed, self()})
+    end
+
+    %{state | status: :ready}
   end
 
   defp do_vectorize(text, %{backend: backend}) when not is_nil(backend) do

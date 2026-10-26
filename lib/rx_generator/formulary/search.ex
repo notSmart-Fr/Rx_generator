@@ -138,13 +138,16 @@ defmodule RxGenerator.Formulary.Search do
   end
 
   defp run_vector_fallback(query, canonical_form, limit, min_similarity) do
-    cleaned_query =
-      query
-      |> String.replace(~r/[*^"':()\-+]/, " ")
-      |> String.trim()
+    if RxGenerator.Formulary.NeuralWorker.status() == :warming do
+      []
+    else
+      cleaned_query =
+        query
+        |> String.replace(~r/[*^"':()\-+]/, " ")
+        |> String.trim()
 
-    case RxGenerator.Formulary.NeuralWorker.vectorize(cleaned_query) do
-      {:ok, query_vec} when is_binary(query_vec) and byte_size(query_vec) == 1024 ->
+      case RxGenerator.Formulary.NeuralWorker.vectorize(cleaned_query) do
+        {:ok, query_vec} when is_binary(query_vec) and byte_size(query_vec) == 1024 ->
         case RxGenerator.Formulary.VectorStore.search(query_vec,
                dosage_form: canonical_form,
                limit: limit,
@@ -154,12 +157,13 @@ defmodule RxGenerator.Formulary.Search do
             item_ids = Enum.map(matches, & &1.drug_catalog_item_id)
             load_items_by_uuids(item_ids)
 
-          _ ->
-            []
-        end
+            _ ->
+              []
+          end
 
-      _ ->
-        []
+        _ ->
+          []
+      end
     end
   end
 

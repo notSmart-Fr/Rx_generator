@@ -82,14 +82,14 @@
 
 ### Tests for User Story 3 (Strict TDD Red-First) ⚠️
 
-- [ ] T019 [P] [US3] Write tests in `test/rx_generator/formulary/neural_worker_lifecycle_test.exs` asserting asynchronous warm-up via `{:continue, :warmup}`, transition from `:warming` to `:ready`, and non-blocking query handling during warm-up
-- [ ] T020 [P] [US3] Write memory benchmark test in `test/rx_generator/formulary/memory_benchmark_test.exs` asserting `:erlang.memory(:total)` remains strictly below 250MB under 10 concurrent autocomplete requests (Article VI)
+- [x] T019 [P] [US3] Write tests in `test/rx_generator/formulary/neural_worker_lifecycle_test.exs` asserting asynchronous warm-up via `{:continue, :warmup}`, transition from `:warming` to `:ready`, and non-blocking query handling during warm-up
+- [x] T020 [P] [US3] Write memory benchmark test in `test/rx_generator/formulary/memory_benchmark_test.exs` asserting `:erlang.memory(:total)` remains strictly below 250MB under 10 concurrent autocomplete requests (Article VI)
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Implement `RxGenerator.Formulary.NeuralWorker` GenServer lifecycle in `lib/rx_generator/formulary/neural_worker.ex` using `{:continue, :warmup}` for asynchronous model loading and EXLA JIT graph compilation
-- [ ] T022 [US3] Add `RxGenerator.Formulary.NeuralWorker` to supervision tree in `lib/rx_generator/application.ex` configured with bundled local weights
-- [ ] T023 [US3] Implement non-blocking fallback in `lib/rx_generator/formulary/search.ex` when `NeuralWorker.status()` returns `:warming`, returning available Tier-1 results immediately without blocking the caller process
+- [x] T021 [US3] Implement `RxGenerator.Formulary.NeuralWorker` GenServer lifecycle in `lib/rx_generator/formulary/neural_worker.ex` using `{:continue, :warmup}` for asynchronous model loading and EXLA JIT graph compilation
+- [x] T022 [US3] Add `RxGenerator.Formulary.NeuralWorker` to supervision tree in `lib/rx_generator/application.ex` configured with bundled local weights
+- [x] T023 [US3] Implement non-blocking fallback in `lib/rx_generator/formulary/search.ex` when `NeuralWorker.status()` returns `:warming`, returning available Tier-1 results immediately without blocking the caller process
 
 **Checkpoint**: Cold-boot mitigation and RAM ceiling adherence fully enforced.
 
