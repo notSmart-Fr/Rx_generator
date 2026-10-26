@@ -558,7 +558,9 @@ defmodule RxGeneratorWeb.CoreComponents do
           >
             <div>
               <span class="font-bold text-zinc-900">{candidate.brand_name}</span>
-              <span class="text-xs text-zinc-500 ml-2">({candidate.generic_name})</span>
+              <span class="text-xs font-black uppercase tracking-wide text-zinc-500 ml-2">({String.upcase(
+                candidate.generic_name
+              )})</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs font-medium bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full border border-zinc-200">

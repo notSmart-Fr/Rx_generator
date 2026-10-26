@@ -102,6 +102,44 @@ defmodule RxGenerator.Test.FormularyFixtures do
   def sample_drugs, do: @sample_drugs
 
   @doc """
+  Safely resets the drug_catalog and drug_catalog_fts tables in tests.
+  Temporarily disables triggers to avoid SQLite foreign key / virtual table cascade issues in sandboxed tests.
+  """
+  def clean_catalog! do
+    Repo.query!("DROP TRIGGER IF EXISTS drug_catalog_ai")
+    Repo.query!("DROP TRIGGER IF EXISTS drug_catalog_ad")
+    Repo.query!("DROP TRIGGER IF EXISTS drug_catalog_au")
+    Repo.query!("DELETE FROM drug_catalog_vectors")
+    Repo.query!("DELETE FROM drug_catalog")
+    Repo.query!("DELETE FROM drug_catalog_fts")
+
+    Repo.query!("""
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_ai AFTER INSERT ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES (new.rowid, new.brand_name, new.generic_name, new.strength, new.dosage_form);
+    END;
+    """)
+
+    Repo.query!("""
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_ad AFTER DELETE ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(drug_catalog_fts, rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES ('delete', old.rowid, old.brand_name, old.generic_name, old.strength, old.dosage_form);
+    END;
+    """)
+
+    Repo.query!("""
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_au AFTER UPDATE ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(drug_catalog_fts, rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES ('delete', old.rowid, old.brand_name, old.generic_name, old.strength, old.dosage_form);
+      INSERT INTO drug_catalog_fts(rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES (new.rowid, new.brand_name, new.generic_name, new.strength, new.dosage_form);
+    END;
+    """)
+
+    :ok
+  end
+
+  @doc """
   Seeds the sample drugs into the test SQLite database and ensures FTS5 index is synchronized.
   """
   def seed_catalog! do

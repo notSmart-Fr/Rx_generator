@@ -7,14 +7,7 @@ defmodule RxGenerator.Formulary.SearchTest do
   alias RxGenerator.Test.FormularyFixtures
 
   setup do
-    # Only delete from the base table.
-    # The 'drug_catalog_ad' trigger automatically synchronizes corresponding rows in drug_catalog_fts.
-    try do
-      RxGenerator.Repo.query!("DELETE FROM drug_catalog;")
-    rescue
-      _ -> :ok
-    end
-
+    FormularyFixtures.clean_catalog!()
     FormularyFixtures.seed_catalog!()
     :ok
   end

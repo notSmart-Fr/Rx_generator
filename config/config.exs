@@ -60,6 +60,12 @@ config :rx_generator, RxGenerator.Repo, timeout: 15_000, busy_timeout: 16_000
 
 config :rx_generator, :print_spooler, RxGenerator.Printing.OSSpooler
 
+config :nx, default_backend: Nx.BinaryBackend
+
+config :rx_generator, RxGenerator.Formulary.NeuralWorker,
+  model_path: Path.expand("../priv/models/embedding_gemma_2", __DIR__),
+  dimension: 256
+
 config :rx_generator,
   ash_domains: [RxGenerator.Formulary, RxGenerator.Prescriptions],
   ecto_repos: [RxGenerator.Repo],
