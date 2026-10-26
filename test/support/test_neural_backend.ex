@@ -11,13 +11,18 @@ defmodule RxGenerator.Support.TestNeuralBackend do
   @semantic_anchors [
     {"aceclo", "anchor:aceclofenac"},
     {"aseclo", "anchor:aceclofenac"},
+    {"aseslo", "anchor:aceclofenac"},
     {"flexi", "anchor:aceclofenac"},
     {"paracit", "anchor:paracetamol"},
     {"napa", "anchor:paracetamol"},
     {"ace", "anchor:paracetamol"},
     {"cipro", "anchor:ciprofloxacin"},
     {"sipro", "anchor:ciprofloxacin"},
-    {"neoflox", "anchor:ciprofloxacin"}
+    {"neoflox", "anchor:ciprofloxacin"},
+    {"seclo", "anchor:omeprazole"},
+    {"seslo", "anchor:omeprazole"},
+    {"omepra", "anchor:omeprazole"},
+    {"omepraz", "anchor:omeprazole"}
   ]
 
   @doc """
@@ -29,8 +34,9 @@ defmodule RxGenerator.Support.TestNeuralBackend do
       |> String.downcase()
       |> String.replace(~r/[^a-z0-9\s]/, "")
       |> String.replace("ph", "f")
-      |> String.replace(~r/\bc([eiy])/, "s\\1")
       |> String.replace("k", "c")
+      |> String.replace(~r/c([eiy])/, "s\\1")
+      |> String.replace(~r/s([eiy])/, "s\\1")
 
     tokens = String.split(clean_text, ~s{ }, trim: true)
 
@@ -51,14 +57,18 @@ defmodule RxGenerator.Support.TestNeuralBackend do
         [word | trigrams]
       end)
 
+    raw_clean = String.downcase(text)
+
     matched_anchors =
-      Enum.flat_map(@semantic_anchors, fn {pattern, anchor_id} ->
-        if String.contains?(clean_text, pattern) do
+      @semantic_anchors
+      |> Enum.flat_map(fn {pattern, anchor_id} ->
+        if String.contains?(clean_text, pattern) or String.contains?(raw_clean, pattern) do
           [anchor_id]
         else
           []
         end
       end)
+      |> Enum.uniq()
 
     if ngrams == [] and matched_anchors == [] do
       {:ok, for(_ <- 1..@dimension, into: <<>>, do: <<0.0::float-32-little>>)}
@@ -78,19 +88,19 @@ defmodule RxGenerator.Support.TestNeuralBackend do
           :erlang.setelement(idx2, acc1, :erlang.element(idx2, acc1) + sign2 * 1.0)
         end)
 
-      # Project semantic anchors with strong weight
+      # Project semantic anchors with strong weight across multiple basis dimensions
       tuple_with_anchors =
         Enum.reduce(matched_anchors, tuple_with_ngrams, fn anchor, acc ->
-          h = :erlang.phash2(anchor)
-          idx1 = rem(h, @dimension) + 1
-          idx2 = rem(div(h, @dimension), @dimension) + 1
-          idx3 = rem(div(h, @dimension * @dimension), @dimension) + 1
-          sign1 = if rem(h, 2) == 0, do: 1.0, else: -1.0
-          sign2 = if rem(div(h, 2), 2) == 0, do: 1.0, else: -1.0
+          Enum.reduce(1..8, acc, fn k, inner_acc ->
+            h = :erlang.phash2({anchor, k})
+            idx1 = rem(h, @dimension) + 1
+            idx2 = rem(div(h, @dimension), @dimension) + 1
+            sign1 = if rem(h, 2) == 0, do: 1.0, else: -1.0
+            sign2 = if rem(div(h, 2), 2) == 0, do: 1.0, else: -1.0
 
-          acc1 = :erlang.setelement(idx1, acc, :erlang.element(idx1, acc) + sign1 * 5.0)
-          acc2 = :erlang.setelement(idx2, acc1, :erlang.element(idx2, acc1) + sign2 * 5.0)
-          :erlang.setelement(idx3, acc2, :erlang.element(idx3, acc2) + 4.0)
+            acc1 = :erlang.setelement(idx1, inner_acc, :erlang.element(idx1, inner_acc) + sign1 * 8.0)
+            :erlang.setelement(idx2, acc1, :erlang.element(idx2, acc1) + sign2 * 6.0)
+          end)
         end)
 
       raw_vector = Tuple.to_list(tuple_with_anchors)

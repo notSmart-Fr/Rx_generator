@@ -62,13 +62,13 @@
 
 ### Tests for User Story 2 (Strict TDD Red-First) ⚠️
 
-- [ ] T015 [P] [US2] Write tests in `test/rx_generator/formulary/formulation_filter_test.exs` asserting that `Search.run/2` with `:syr`, `:tab`, `:cap`, and `:inj` hints strictly filters candidate vectors by `c.dosage_form`
-- [ ] T016 [P] [US2] Write tests in `test/rx_generator/formulary/formulation_filter_test.exs` asserting that queries without dosage form hints return matches across all forms, and unrecognized form hints fall back safely without raising exceptions
+- [x] T015 [P] [US2] Write tests in `test/rx_generator/formulary/formulation_filter_test.exs` asserting that `Search.run/2` with `:syr`, `:tab`, `:cap`, and `:inj` hints strictly filters candidate vectors by `c.dosage_form`
+- [x] T016 [P] [US2] Write tests in `test/rx_generator/formulary/formulation_filter_test.exs` asserting that queries without dosage form hints return matches across all forms, and unrecognized form hints fall back safely without raising exceptions
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Implement dosage form SQL filtering in `lib/rx_generator/formulary/vector_store.ex` joining `drug_catalog` on `v.drug_catalog_item_id = c.id` with `WHERE (? IS NULL OR c.dosage_form = ?)`
-- [ ] T018 [US2] Integrate `normalize_form/1` in `lib/rx_generator/formulary/search.ex` to extract form tokens from shorthand queries and pass canonical form strings (`"Tablet"`, `"Syrup"`, `"Capsule"`, `"Injection"`) to `VectorStore.search/2`
+- [x] T017 [US2] Implement dosage form SQL filtering in `lib/rx_generator/formulary/vector_store.ex` joining `drug_catalog` on `v.drug_catalog_item_id = c.id` with `WHERE (? IS NULL OR c.dosage_form = ?)`
+- [x] T018 [US2] Integrate `normalize_form/1` in `lib/rx_generator/formulary/search.ex` to extract form tokens from shorthand queries and pass canonical form strings (`"Tablet"`, `"Syrup"`, `"Capsule"`, `"Injection"`) to `VectorStore.search/2`
 
 **Checkpoint**: User Stories 1 AND 2 both work and are independently testable.
 

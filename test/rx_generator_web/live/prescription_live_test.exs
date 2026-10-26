@@ -5,7 +5,7 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
   alias RxGenerator.Test.FormularyFixtures
 
   setup do
-    RxGenerator.Repo.query!("DELETE FROM drug_catalog;")
+    FormularyFixtures.clean_catalog!()
     FormularyFixtures.seed_catalog!()
     :ok
   end

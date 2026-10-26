@@ -63,6 +63,36 @@ defmodule RxGenerator.Formulary.Search do
   def normalize_form(_), do: nil
 
   @doc """
+  Extracts any recognized dosage form alias from a query string, returning `{cleaned_query, canonical_form}`.
+  If no form token is found, returns `{query, nil}`.
+  """
+  def extract_form_hint(query) when is_binary(query) do
+    tokens = String.split(query, ~s{ }, trim: true)
+
+    # Only treat a token as a form hint if there are other tokens in the query
+    # (i.e. if the user searches for "tablet" alone or "aseclofen", don't empty the query)
+    case Enum.split_with(tokens, fn token ->
+           cleaned = token |> String.trim() |> String.downcase() |> String.replace(~r/[^a-z]/, "")
+           Map.has_key?(@form_aliases, cleaned)
+         end) do
+      {_matched, []} ->
+        # Query consists ONLY of form token(s); keep original query so search can search on it
+        {query, nil}
+
+      {[], _other_tokens} ->
+        {query, nil}
+
+      {matched_form_tokens, remaining_tokens} ->
+        # Use the first recognized form token
+        canonical = normalize_form(hd(matched_form_tokens))
+        cleaned_query = Enum.join(remaining_tokens, " ")
+        {cleaned_query, canonical}
+    end
+  end
+
+  def extract_form_hint(query), do: {query, nil}
+
+  @doc """
   Searches `drug_catalog_fts` with a query string and optional options:
   - `:limit` - Maximum number of results to return (default: 10)
   - `:form` or `:dosage_form` - Presentation form to filter by (e.g. `:tab`, `:syr`, `"Tablet"`)
@@ -72,11 +102,13 @@ defmodule RxGenerator.Formulary.Search do
   def run(query, opts \\ []) when is_binary(query) do
     limit = Keyword.get(opts, :limit, 10)
     raw_form = Keyword.get(opts, :form) || Keyword.get(opts, :dosage_form)
-    canonical_form = normalize_form(raw_form)
     min_similarity = Keyword.get(opts, :min_similarity, 0.65)
 
+    {cleaned_query, extracted_form} = extract_form_hint(query)
+    canonical_form = normalize_form(raw_form) || extracted_form
+
     fts_results =
-      case build_match_expression(query) do
+      case build_match_expression(cleaned_query) do
         nil -> []
         expr -> execute_search(expr, canonical_form, limit)
       end
@@ -91,7 +123,7 @@ defmodule RxGenerator.Formulary.Search do
 
         fts_results
       else
-        fallback_results = run_vector_fallback(query, canonical_form, limit, min_similarity)
+        fallback_results = run_vector_fallback(cleaned_query, canonical_form, limit, min_similarity)
 
         :telemetry.execute(
           [:rx_generator, :formulary, :search],
