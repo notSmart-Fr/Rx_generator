@@ -10,14 +10,17 @@ defmodule RxGenerator.Formulary.MemoryBenchmarkTest do
     :ok
   end
 
-  @ceiling_bytes 250 * 1024 * 1024 # 250MB
+  # 250MB
+  @ceiling_bytes 250 * 1024 * 1024
 
   describe "T020: Memory ceiling enforcement under concurrent autocomplete load (Article VI)" do
     test "active memory remains strictly below 250MB under 10 concurrent autocomplete requests" do
       # Baseline memory
       :erlang.garbage_collect()
       baseline_mem = :erlang.memory(:total)
-      assert baseline_mem < @ceiling_bytes, "Baseline memory #{baseline_mem} already exceeds 250MB"
+
+      assert baseline_mem < @ceiling_bytes,
+             "Baseline memory #{baseline_mem} already exceeds 250MB"
 
       queries = [
         "paracit",
@@ -51,6 +54,7 @@ defmodule RxGenerator.Formulary.MemoryBenchmarkTest do
 
       # Post-load memory measurement
       active_mem = :erlang.memory(:total)
+
       assert active_mem < @ceiling_bytes,
              "Memory usage #{div(active_mem, 1024 * 1024)}MB exceeded 250MB ceiling"
     end

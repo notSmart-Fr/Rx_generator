@@ -12,6 +12,39 @@ defmodule RxGenerator.Formulary.DrugCatalogVector do
     repo RxGenerator.Repo
   end
 
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      primary? true
+      accept [:drug_catalog_item_id, :embedding, :dimension, :model_version]
+    end
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:embedding, :dimension, :model_version]
+    end
+  end
+
+  validations do
+    validate fn changeset, _context ->
+      case Ash.Changeset.get_attribute(changeset, :embedding) do
+        nil ->
+          :ok
+
+        binary when is_binary(binary) and byte_size(binary) == 1024 ->
+          :ok
+
+        binary when is_binary(binary) ->
+          {:error, field: :embedding, message: "must be exactly 1024 bytes (256 float32 values)"}
+
+        _ ->
+          {:error, field: :embedding, message: "must be a binary blob"}
+      end
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -41,39 +74,6 @@ defmodule RxGenerator.Formulary.DrugCatalogVector do
     belongs_to :drug_catalog_item, RxGenerator.Formulary.DrugCatalogItem do
       allow_nil? false
       attribute_writable? true
-    end
-  end
-
-  validations do
-    validate fn changeset, _context ->
-      case Ash.Changeset.get_attribute(changeset, :embedding) do
-        nil ->
-          :ok
-
-        binary when is_binary(binary) and byte_size(binary) == 1024 ->
-          :ok
-
-        binary when is_binary(binary) ->
-          {:error, field: :embedding, message: "must be exactly 1024 bytes (256 float32 values)"}
-
-        _ ->
-          {:error, field: :embedding, message: "must be a binary blob"}
-      end
-    end
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      primary? true
-      accept [:drug_catalog_item_id, :embedding, :dimension, :model_version]
-    end
-
-    update :update do
-      primary? true
-      require_atomic? false
-      accept [:embedding, :dimension, :model_version]
     end
   end
 end

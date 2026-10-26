@@ -249,6 +249,7 @@ defmodule RxGenerator.Formulary.FormulationFilterTest do
       results = Search.run("paracit", form: :syr)
 
       assert results != []
+
       assert Enum.all?(results, fn item ->
                is_struct(item, DrugCatalogItem) and
                  is_binary(item.id) and

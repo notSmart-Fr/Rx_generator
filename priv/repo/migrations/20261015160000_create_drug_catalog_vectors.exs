@@ -4,7 +4,10 @@ defmodule RxGenerator.Repo.Migrations.CreateDrugCatalogVectors do
   def up do
     create table(:drug_catalog_vectors, primary_key: false) do
       add :id, :uuid, null: false, primary_key: true
-      add :drug_catalog_item_id, references(:drug_catalog, type: :uuid, on_delete: :delete_all), null: false
+
+      add :drug_catalog_item_id, references(:drug_catalog, type: :uuid, on_delete: :delete_all),
+        null: false
+
       add :embedding, :binary, null: false
       add :dimension, :integer, null: false, default: 256
       add :model_version, :text, null: false
@@ -13,12 +16,12 @@ defmodule RxGenerator.Repo.Migrations.CreateDrugCatalogVectors do
     end
 
     create unique_index(:drug_catalog_vectors, [:drug_catalog_item_id],
-      name: "drug_catalog_vectors_item_id_idx"
-    )
+             name: "drug_catalog_vectors_item_id_idx"
+           )
 
     create index(:drug_catalog_vectors, [:model_version],
-      name: "drug_catalog_vectors_version_idx"
-    )
+             name: "drug_catalog_vectors_version_idx"
+           )
 
     # SQLite check constraint and dimension guard
     execute """
@@ -35,8 +38,15 @@ defmodule RxGenerator.Repo.Migrations.CreateDrugCatalogVectors do
 
   def down do
     execute "DROP TRIGGER IF EXISTS validate_drug_catalog_vector_dim;"
-    drop_if_exists index(:drug_catalog_vectors, [:model_version], name: "drug_catalog_vectors_version_idx")
-    drop_if_exists unique_index(:drug_catalog_vectors, [:drug_catalog_item_id], name: "drug_catalog_vectors_item_id_idx")
+
+    drop_if_exists index(:drug_catalog_vectors, [:model_version],
+                     name: "drug_catalog_vectors_version_idx"
+                   )
+
+    drop_if_exists unique_index(:drug_catalog_vectors, [:drug_catalog_item_id],
+                     name: "drug_catalog_vectors_item_id_idx"
+                   )
+
     drop table(:drug_catalog_vectors)
   end
 end

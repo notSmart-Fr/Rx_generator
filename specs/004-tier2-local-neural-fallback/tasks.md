@@ -119,10 +119,10 @@
 
 **Purpose**: End-to-end integration, air-gapped security audits, and High Court formatting compliance.
 
-- [ ] T028 [P] Write air-gapped network isolation audit test in `test/rx_generator/formulary/airgap_audit_test.exs` verifying zero outbound network calls during vector inference and search (Article V)
-- [ ] T029 [P] Write LiveView omnibar integration test in `test/rx_generator_web/live/prescription_live/omnibar_tier2_test.exs` verifying phonetic shorthand typos in the UI omnibar resolve to DGDA catalog items with uppercase generic names (Article II)
-- [ ] T030 Execute quickstart validation scenarios per `specs/004-tier2-local-neural-fallback/quickstart.md`
-- [ ] T031 Run `mix precommit` to verify compilation with zero warnings, format checks, and 100% test pass rate
+- [x] T028 [P] Write air-gapped network isolation audit test in `test/rx_generator/formulary/airgap_audit_test.exs` verifying zero outbound network calls during vector inference and search (Article V)
+- [x] T029 [P] Write LiveView omnibar integration test in `test/rx_generator_web/live/prescription_live/omnibar_tier2_test.exs` verifying phonetic shorthand typos in the UI omnibar resolve to DGDA catalog items with uppercase generic names (Article II)
+- [x] T030 Execute quickstart validation scenarios per `specs/004-tier2-local-neural-fallback/quickstart.md`
+- [x] T031 Run `mix precommit` to verify compilation with zero warnings, format checks, and 100% test pass rate
 
 ---
 

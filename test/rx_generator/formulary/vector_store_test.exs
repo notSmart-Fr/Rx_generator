@@ -62,12 +62,16 @@ defmodule RxGenerator.Formulary.VectorStoreTest do
       assert byte_size(tab_vec) == 1024
     end
 
-    test "calculates normalized dot product between two identical float32 vectors", %{tab_vec: tab_vec} do
+    test "calculates normalized dot product between two identical float32 vectors", %{
+      tab_vec: tab_vec
+    } do
       score = VectorStore.cosine_similarity(tab_vec, tab_vec)
       assert_in_delta score, 1.0, 0.001
     end
 
-    test "handles zero-magnitude vector without raising division-by-zero crash", %{tab_vec: tab_vec} do
+    test "handles zero-magnitude vector without raising division-by-zero crash", %{
+      tab_vec: tab_vec
+    } do
       zero_vector = for _ <- 1..256, into: <<>>, do: <<0.0::float-32-little>>
 
       # Must return 0.0 or error tuple, NEVER raise ArithmeticError
@@ -81,7 +85,10 @@ defmodule RxGenerator.Formulary.VectorStoreTest do
   end
 
   describe "search/2 clinical presentation & scoring boundaries" do
-    test "returns closest matching item based on query vector", %{tab_item: tab_item, tab_vec: tab_vec} do
+    test "returns closest matching item based on query vector", %{
+      tab_item: tab_item,
+      tab_vec: tab_vec
+    } do
       assert {:ok, [match | _]} = VectorStore.search(tab_vec, limit: 5, min_similarity: 0.65)
       assert match.drug_catalog_item_id == tab_item.id
       assert match.similarity >= 0.95

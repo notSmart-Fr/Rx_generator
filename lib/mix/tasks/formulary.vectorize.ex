@@ -38,7 +38,10 @@ defmodule Mix.Tasks.Formulary.Vectorize do
     force? = Keyword.get(opts, :force, false)
     quiet? = Keyword.get(opts, :quiet, false)
 
-    log(quiet?, "Starting DGDA catalog vectorization (batch_size: #{batch_size}, force: #{force?})...")
+    log(
+      quiet?,
+      "Starting DGDA catalog vectorization (batch_size: #{batch_size}, force: #{force?})..."
+    )
 
     # Fetch candidate items
     query =
@@ -65,42 +68,45 @@ defmodule Mix.Tasks.Formulary.Vectorize do
   end
 
   defp process_in_batches(query, batch_size, quiet?) do
-    Repo.transaction(fn ->
-      query
-      |> Repo.stream(max_rows: batch_size)
-      |> Stream.chunk_every(batch_size)
-      |> Enum.reduce(0, fn batch, acc ->
-        texts = Enum.map(batch, &Vectorizer.format_canonical/1)
-        {:ok, vectors} = Vectorizer.vectorize_batch(texts)
+    Repo.transaction(
+      fn ->
+        query
+        |> Repo.stream(max_rows: batch_size)
+        |> Stream.chunk_every(batch_size)
+        |> Enum.reduce(0, fn batch, acc ->
+          texts = Enum.map(batch, &Vectorizer.format_canonical/1)
+          {:ok, vectors} = Vectorizer.vectorize_batch(texts)
 
-        now = DateTime.utc_now()
+          now = DateTime.utc_now()
 
-        upsert_entries =
-          Enum.zip(batch, vectors)
-          |> Enum.map(fn {item, vec} ->
-            %{
-              id: Ash.UUID.generate(),
-              drug_catalog_item_id: item.id,
-              embedding: vec,
-              dimension: 256,
-              model_version: "embedding_gemma_2_270m_mrl256",
-              inserted_at: now,
-              updated_at: now
-            }
-          end)
+          upsert_entries =
+            Enum.zip(batch, vectors)
+            |> Enum.map(fn {item, vec} ->
+              %{
+                id: Ash.UUID.generate(),
+                drug_catalog_item_id: item.id,
+                embedding: vec,
+                dimension: 256,
+                model_version: "embedding_gemma_2_270m_mrl256",
+                inserted_at: now,
+                updated_at: now
+              }
+            end)
 
-        Repo.insert_all(
-          DrugCatalogVector,
-          upsert_entries,
-          on_conflict: {:replace, [:embedding, :dimension, :model_version, :updated_at]},
-          conflict_target: :drug_catalog_item_id
-        )
+          Repo.insert_all(
+            DrugCatalogVector,
+            upsert_entries,
+            on_conflict: {:replace, [:embedding, :dimension, :model_version, :updated_at]},
+            conflict_target: :drug_catalog_item_id
+          )
 
-        processed = acc + length(batch)
-        log(quiet?, "Vectorized #{processed} items...")
-        processed
-      end)
-    end, timeout: :infinity)
+          processed = acc + length(batch)
+          log(quiet?, "Vectorized #{processed} items...")
+          processed
+        end)
+      end,
+      timeout: :infinity
+    )
   end
 
   defp log(true, _msg), do: :ok

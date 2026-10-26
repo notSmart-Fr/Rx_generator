@@ -98,7 +98,9 @@ defmodule RxGenerator.Support.TestNeuralBackend do
             sign1 = if rem(h, 2) == 0, do: 1.0, else: -1.0
             sign2 = if rem(div(h, 2), 2) == 0, do: 1.0, else: -1.0
 
-            acc1 = :erlang.setelement(idx1, inner_acc, :erlang.element(idx1, inner_acc) + sign1 * 8.0)
+            acc1 =
+              :erlang.setelement(idx1, inner_acc, :erlang.element(idx1, inner_acc) + sign1 * 8.0)
+
             :erlang.setelement(idx2, acc1, :erlang.element(idx2, acc1) + sign2 * 6.0)
           end)
         end)

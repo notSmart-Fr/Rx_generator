@@ -123,7 +123,8 @@ defmodule RxGenerator.Formulary.Search do
 
         fts_results
       else
-        fallback_results = run_vector_fallback(cleaned_query, canonical_form, limit, min_similarity)
+        fallback_results =
+          run_vector_fallback(cleaned_query, canonical_form, limit, min_similarity)
 
         :telemetry.execute(
           [:rx_generator, :formulary, :search],
@@ -148,14 +149,14 @@ defmodule RxGenerator.Formulary.Search do
 
       case RxGenerator.Formulary.NeuralWorker.vectorize(cleaned_query) do
         {:ok, query_vec} when is_binary(query_vec) and byte_size(query_vec) == 1024 ->
-        case RxGenerator.Formulary.VectorStore.search(query_vec,
-               dosage_form: canonical_form,
-               limit: limit,
-               min_similarity: min_similarity
-             ) do
-          {:ok, matches} ->
-            item_ids = Enum.map(matches, & &1.drug_catalog_item_id)
-            load_items_by_uuids(item_ids)
+          case RxGenerator.Formulary.VectorStore.search(query_vec,
+                 dosage_form: canonical_form,
+                 limit: limit,
+                 min_similarity: min_similarity
+               ) do
+            {:ok, matches} ->
+              item_ids = Enum.map(matches, & &1.drug_catalog_item_id)
+              load_items_by_uuids(item_ids)
 
             _ ->
               []

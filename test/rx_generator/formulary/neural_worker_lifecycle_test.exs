@@ -27,18 +27,16 @@ defmodule RxGenerator.Formulary.NeuralWorkerLifecycleTest do
       test_worker_name = :"test_worker_#{System.unique_integer([:positive])}"
 
       worker_pid =
-        start_supervised!(
-          {NeuralWorker,
-           [
-             name: test_worker_name,
-             backend: MockVectorBackend,
-             notify_pid: parent,
-             on_warmup: fn ->
-               # Small yield to guarantee :continue async handling
-               :timer.sleep(10)
-             end
-           ]}
-        )
+        start_supervised!({NeuralWorker,
+         [
+           name: test_worker_name,
+           backend: MockVectorBackend,
+           notify_pid: parent,
+           on_warmup: fn ->
+             # Small yield to guarantee :continue async handling
+             :timer.sleep(10)
+           end
+         ]})
 
       # Ensure process is alive and successfully received {:continue, :warmup}
       assert_receive {:warmup_completed, ^worker_pid}, 1000
@@ -90,7 +88,9 @@ defmodule RxGenerator.Formulary.NeuralWorkerLifecycleTest do
       end
     end
 
-    test "LiveView mount completes without freezing (< 15ms) during cold-boot / warming state", %{conn: conn} do
+    test "LiveView mount completes without freezing (< 15ms) during cold-boot / warming state", %{
+      conn: conn
+    } do
       pid = Process.whereis(NeuralWorker)
       original_state = :sys.get_state(pid)
 
@@ -103,7 +103,10 @@ defmodule RxGenerator.Formulary.NeuralWorkerLifecycleTest do
 
         # Measure direct PrescriptionLive.mount execution time
         start_time = System.monotonic_time(:microsecond)
-        {:ok, socket} = RxGeneratorWeb.PrescriptionLive.mount(%{}, %{}, %Phoenix.LiveView.Socket{})
+
+        {:ok, socket} =
+          RxGeneratorWeb.PrescriptionLive.mount(%{}, %{}, %Phoenix.LiveView.Socket{})
+
         mount_micros = System.monotonic_time(:microsecond) - start_time
         mount_ms = div(mount_micros, 1000)
 

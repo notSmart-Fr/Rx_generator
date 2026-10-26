@@ -106,7 +106,7 @@ defmodule RxGenerator.Formulary.Ingestion.Vectorizer do
 
   defp do_vectorize_text(text, backend) do
     cond do
-      backend && Code.ensure_loaded?(backend) and function_exported?(backend, :vectorize, 1) ->
+      (backend && Code.ensure_loaded?(backend)) and function_exported?(backend, :vectorize, 1) ->
         backend.vectorize(text)
 
       Code.ensure_loaded?(RxGenerator.Support.TestNeuralBackend) ->
