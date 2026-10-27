@@ -5,8 +5,11 @@ defmodule RxGenerator.Formulary.SearchTier2Test do
   alias RxGenerator.Formulary.DrugCatalogVector
   alias RxGenerator.Formulary.Search
   alias RxGenerator.Support.TestNeuralBackend
+  alias RxGenerator.Test.FormularyFixtures
 
   setup do
+    FormularyFixtures.clean_catalog!()
+
     # Attach telemetry listener to verify search path deterministically without timing flakiness
     test_pid = self()
     handler_id = "test-search-telemetry-#{System.unique_integer()}"
@@ -101,19 +104,27 @@ defmodule RxGenerator.Formulary.SearchTier2Test do
   end
 
   describe "Tier-2 vector fallback path & Article I enforcement" do
-    test "phonetic typo activates Tier-2 fallback and returns exact verified primary keys", %{
-      flexi: flexi
-    } do
+    test "phonetic typo activates Tier-2 fallback and returns exact verified primary keys in < 15ms",
+         %{
+           flexi: flexi,
+           napa_tab: napa_tab,
+           napa_syr: napa_syr
+         } do
       results = Search.run("aseclofen")
 
-      # Telemetry strictly proves Tier-2 vector fallback was executed
-      assert_receive {:search_telemetry, _measurements, %{tier: :vector, query: "aseclofen"}}
+      # Telemetry strictly proves Tier-2 vector fallback was executed within 15ms budget
+      assert_receive {:search_telemetry, %{duration_us: duration_us},
+                      %{tier: :vector, query: "aseclofen"}}
 
-      # Must resolve to Flexi
+      assert duration_us < 15_000,
+             "Expected Tier-2 vector fallback under 15ms, got #{duration_us / 1000}ms"
+
+      # Must resolve to Flexi and exclude unrelated Paracetamol records
       assert results != []
       assert hd(results).id == flexi.id
       assert hd(results).brand_name == "Flexi"
       assert hd(results).generic_name == "Aceclofenac"
+      refute Enum.any?(results, fn item -> item.id in [napa_tab.id, napa_syr.id] end)
 
       # Invariant (Article I): 100% of candidates must be valid DrugCatalogItem structs with verified IDs
       assert Enum.all?(results, fn item ->
@@ -123,10 +134,26 @@ defmodule RxGenerator.Formulary.SearchTier2Test do
       # De-duplication invariant
       assert length(results) == length(Enum.uniq_by(results, & &1.id))
     end
+
+    test "low-confidence Tier-1 FTS5 trigram match (< 0.85) triggers Tier-2 vector fallback", %{
+      flexi: flexi
+    } do
+      # "clo" matches mid-word inside "Aceclofenac" via FTS5 trigram, but is not a prefix
+      # and has word-level Jaro confidence < 0.85
+      assert Search.fts_confidence("clo", [flexi]) < 0.85
+
+      _results = Search.run("clo")
+
+      assert_receive {:search_telemetry, _measurements,
+                      %{tier: :vector, query: "clo", confidence: conf}}
+
+      assert conf < 0.85
+    end
   end
 
   describe "Article VII Presentation Form Invariance (Formulation Leakage Guard)" do
     test "phonetic query with syrup constraint strictly excludes tablet formulations", %{
+      flexi: flexi,
       napa_tab: napa_tab,
       napa_syr: napa_syr
     } do
@@ -140,12 +167,13 @@ defmodule RxGenerator.Formulary.SearchTier2Test do
       assert hd(results).id == napa_syr.id
       assert hd(results).dosage_form == "Syrup"
 
-      # Article VII violation check: Adult tablet must NEVER be returned when syrup was requested
-      refute Enum.any?(results, fn item -> item.id == napa_tab.id end)
+      # Article VII violation check: Adult tablet and unrelated drugs must NEVER be returned
+      refute Enum.any?(results, fn item -> item.id in [napa_tab.id, flexi.id] end)
       assert Enum.all?(results, fn item -> item.dosage_form == "Syrup" end)
     end
 
-    test "phonetic query with tablet constraint returns tablet formulation", %{
+    test "phonetic query with tablet constraint returns only matching drug tablet formulation", %{
+      flexi: flexi,
       napa_tab: napa_tab,
       napa_syr: napa_syr
     } do
@@ -157,17 +185,24 @@ defmodule RxGenerator.Formulary.SearchTier2Test do
       assert hd(results).id == napa_tab.id
       assert hd(results).dosage_form == "Tablet"
       refute Enum.any?(results, fn item -> item.id == napa_syr.id end)
+      # Unrelated tablet (Flexi Aceclofenac) must NOT leak into Paracetamol results
+      refute Enum.any?(results, fn item -> item.id == flexi.id end)
     end
   end
 
   describe "Tier-1 FTS5 short-circuit bypass" do
-    test "clean query with high FTS5 confidence bypasses Tier-2 vectorization completely", %{
-      flexi: flexi
-    } do
+    test "clean query with high FTS5 confidence (>= 0.85) bypasses Tier-2 vectorization completely",
+         %{
+           flexi: flexi
+         } do
       results = Search.run("Flexi")
 
-      # Telemetry strictly proves Tier-1 was used
-      assert_receive {:search_telemetry, _measurements, %{tier: :fts5, query: "Flexi"}}
+      # Telemetry strictly proves Tier-1 was used with high confidence (>= 0.85)
+      assert_receive {:search_telemetry, %{duration_us: duration_us},
+                      %{tier: :fts5, query: "Flexi", confidence: conf}}
+
+      assert conf >= 0.85
+      assert duration_us < 5_000
 
       # Tier-2 vector search must NEVER have been called
       refute_receive {:search_telemetry, _measurements, %{tier: :vector}}

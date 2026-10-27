@@ -49,7 +49,13 @@ defmodule RxGenerator.Formulary.VectorStore do
       limit = Keyword.get(opts, :limit, @default_limit)
       min_sim = Keyword.get(opts, :min_similarity, @default_min_similarity)
       raw_form = Keyword.get(opts, :dosage_form) || Keyword.get(opts, :form)
-      canonical_form = RxGenerator.Formulary.Search.normalize_form(raw_form) || raw_form
+
+      canonical_form =
+        case RxGenerator.Formulary.Search.normalize_form(raw_form) do
+          nil when is_binary(raw_form) -> raw_form
+          nil when is_atom(raw_form) and not is_nil(raw_form) -> Atom.to_string(raw_form)
+          other -> other
+        end
 
       query_tensor = Nx.from_binary(query_vector, :f32)
       query_norm = Nx.LinAlg.norm(query_tensor) |> Nx.to_number()

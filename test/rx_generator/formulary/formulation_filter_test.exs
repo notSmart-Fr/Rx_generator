@@ -6,8 +6,11 @@ defmodule RxGenerator.Formulary.FormulationFilterTest do
   alias RxGenerator.Formulary.Search
   alias RxGenerator.Formulary.VectorStore
   alias RxGenerator.Support.TestNeuralBackend
+  alias RxGenerator.Test.FormularyFixtures
 
   setup do
+    FormularyFixtures.clean_catalog!()
+
     # Attach telemetry listener to verify search path deterministically
     test_pid = self()
     handler_id = "test-formulation-telemetry-#{System.unique_integer()}"
@@ -262,10 +265,13 @@ defmodule RxGenerator.Formulary.FormulationFilterTest do
   end
 
   describe "T016: Queries without dosage form hints and unrecognized form hints fallback safely" do
-    test "query without dosage form hint returns matching candidates across multiple forms", %{
-      napa_tab: napa_tab,
-      napa_syr: napa_syr
-    } do
+    test "query without dosage form hint returns matching candidates across multiple forms and excludes unrelated drugs",
+         %{
+           napa_tab: napa_tab,
+           napa_syr: napa_syr,
+           seclo_cap: seclo_cap,
+           seclo_inj: seclo_inj
+         } do
       results = Search.run("paracit")
 
       assert_receive {:search_telemetry, _measurements, %{tier: :vector}}
@@ -275,14 +281,38 @@ defmodule RxGenerator.Formulary.FormulationFilterTest do
       # Both Tablet and Syrup formulations can be returned when no form constraint is given
       assert napa_tab.id in ids
       assert napa_syr.id in ids
+      # Unrelated drugs must not leak
+      refute seclo_cap.id in ids
+      refute seclo_inj.id in ids
     end
 
-    test "unrecognized dosage form hint falls back safely without raising exceptions or returning crashes" do
-      assert results = Search.run("paracit", form: :non_existent_form)
-      assert is_list(results)
+    test "multi-token query with non-form second token (e.g. strength 'paracit 500') does not misclassify token as form",
+         %{
+           napa_tab: napa_tab,
+           napa_syr: napa_syr
+         } do
+      assert {"paracit 500", nil} = Search.extract_form_hint("paracit 500")
 
-      assert string_results = Search.run("paracit", form: "completely_unrecognized_form_xyz")
+      results = Search.run("paracit 500")
+      ids = Enum.map(results, & &1.id)
+      assert napa_tab.id in ids
+      assert napa_syr.id in ids
+    end
+
+    test "unrecognized dosage form hint falls back safely to unfiltered matches without raising exceptions",
+         %{
+           napa_tab: napa_tab,
+           napa_syr: napa_syr
+         } do
+      results = Search.run("paracit", form: :non_existent_form)
+      assert is_list(results)
+      assert Enum.any?(results, &(&1.id == napa_tab.id))
+      assert Enum.any?(results, &(&1.id == napa_syr.id))
+
+      string_results = Search.run("paracit", form: "completely_unrecognized_form_xyz")
       assert is_list(string_results)
+      assert Enum.any?(string_results, &(&1.id == napa_tab.id))
+      assert Enum.any?(string_results, &(&1.id == napa_syr.id))
     end
 
     test "arbitrary and non-binary/non-atom form values (e.g. nil, numbers, maps) do not crash normalize_form/1" do
@@ -292,15 +322,23 @@ defmodule RxGenerator.Formulary.FormulationFilterTest do
       assert Search.normalize_form([:invalid]) == nil
     end
 
-    test "VectorStore.search/2 directly handles nil and unrecognized dosage_form cleanly", %{
-      napa_tab_vec: napa_tab_vec
-    } do
+    test "VectorStore.search/2 directly handles nil, unrecognized string, and unrecognized atom dosage_form cleanly",
+         %{
+           napa_tab_vec: napa_tab_vec
+         } do
       assert {:ok, results_nil} = VectorStore.search(napa_tab_vec, dosage_form: nil)
       assert results_nil != []
 
-      assert {:ok, results_unknown} = VectorStore.search(napa_tab_vec, dosage_form: "UnknownForm")
+      assert {:ok, results_unknown_str} =
+               VectorStore.search(napa_tab_vec, dosage_form: "UnknownForm")
+
       # Unknown form should return empty list without SQL syntax or runtime error
-      assert results_unknown == []
+      assert results_unknown_str == []
+
+      assert {:ok, results_unknown_atom} =
+               VectorStore.search(napa_tab_vec, dosage_form: :unknown_atom_form)
+
+      assert results_unknown_atom == []
     end
   end
 end

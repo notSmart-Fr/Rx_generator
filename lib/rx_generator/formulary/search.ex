@@ -100,9 +100,11 @@ defmodule RxGenerator.Formulary.Search do
   Returns a list of `DrugCatalogItem` structs ordered by match relevance.
   """
   def run(query, opts \\ []) when is_binary(query) do
+    start_time = System.monotonic_time(:microsecond)
     limit = Keyword.get(opts, :limit, 10)
     raw_form = Keyword.get(opts, :form) || Keyword.get(opts, :dosage_form)
     min_similarity = Keyword.get(opts, :min_similarity, 0.65)
+    min_fts_confidence = Keyword.get(opts, :min_fts_confidence, 0.85)
 
     {cleaned_query, extracted_form} = extract_form_hint(query)
     canonical_form = normalize_form(raw_form) || extracted_form
@@ -113,12 +115,16 @@ defmodule RxGenerator.Formulary.Search do
         expr -> execute_search(expr, canonical_form, limit)
       end
 
+    confidence = fts_confidence(cleaned_query, fts_results)
+
     results =
-      if fts_results != [] do
+      if fts_results != [] and confidence >= min_fts_confidence do
+        duration_us = System.monotonic_time(:microsecond) - start_time
+
         :telemetry.execute(
           [:rx_generator, :formulary, :search],
-          %{count: length(fts_results)},
-          %{tier: :fts5, query: query}
+          %{count: length(fts_results), duration_us: duration_us},
+          %{tier: :fts5, query: query, confidence: confidence}
         )
 
         fts_results
@@ -126,16 +132,73 @@ defmodule RxGenerator.Formulary.Search do
         fallback_results =
           run_vector_fallback(cleaned_query, canonical_form, limit, min_similarity)
 
+        final_results =
+          if fallback_results != [] do
+            fallback_results
+          else
+            fts_results
+          end
+
+        duration_us = System.monotonic_time(:microsecond) - start_time
+
         :telemetry.execute(
           [:rx_generator, :formulary, :search],
-          %{count: length(fallback_results)},
-          %{tier: :vector, query: query}
+          %{count: length(final_results), duration_us: duration_us},
+          %{tier: :vector, query: query, confidence: confidence}
         )
 
-        fallback_results
+        final_results
       end
 
     Enum.uniq_by(results, & &1.id)
+  end
+
+  @doc """
+  Computes deterministic relevance confidence (0.0 to 1.0) of Tier-1 FTS5 results
+  against the cleaned query string. Prefix matches score 1.0; partial internal trigram
+  matches are scored via word-level Jaro similarity.
+  """
+  def fts_confidence(_cleaned_query, []), do: 0.0
+
+  def fts_confidence(cleaned_query, [top | _]) when is_binary(cleaned_query) do
+    query_tokens =
+      cleaned_query
+      |> String.downcase()
+      |> String.replace(~r/(\d+)([a-zA-Z]+)/, "\\1 \\2")
+      |> String.replace(~r/[*^"':()\-+\/]/, " ")
+      |> String.split(~s{ }, trim: true)
+      |> Enum.reject(fn token ->
+        String.length(token) < 3 or token in @unit_stop_words
+      end)
+
+    target_words =
+      [top.brand_name, top.generic_name, top.strength]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" ")
+      |> String.downcase()
+      |> String.replace(~r/(\d+)([a-zA-Z]+)/, "\\1 \\2")
+      |> String.replace(~r/[^a-z0-9\s]/, " ")
+      |> String.split(~s{ }, trim: true)
+
+    if query_tokens == [] or target_words == [] do
+      0.0
+    else
+      total_score =
+        Enum.reduce(query_tokens, 0.0, fn q_tok, acc ->
+          token_score =
+            if Enum.any?(target_words, &String.starts_with?(&1, q_tok)) do
+              1.0
+            else
+              target_words
+              |> Enum.map(&String.jaro_distance(q_tok, &1))
+              |> Enum.max(fn -> 0.0 end)
+            end
+
+          acc + token_score
+        end)
+
+      total_score / length(query_tokens)
+    end
   end
 
   defp run_vector_fallback(query, canonical_form, limit, min_similarity) do

@@ -8,40 +8,69 @@ defmodule RxGenerator.Support.TestNeuralBackend do
 
   @dimension 256
 
+  @stop_words ~w(
+    tablet tablets tab tabs
+    syrup syr susp suspension liquid oralliquid
+    capsule capsules cap caps
+    injection injectable inj vial
+    suppository suppositories supp
+    drop drops eyedrop eardrop
+    cream cr ointment oint gel inhaler inhalation
+    mg ml gm iu cc ts mcg
+  )
+
   @semantic_anchors [
-    {"aceclo", "anchor:aceclofenac"},
-    {"aseclo", "anchor:aceclofenac"},
-    {"aseslo", "anchor:aceclofenac"},
-    {"flexi", "anchor:aceclofenac"},
-    {"paracit", "anchor:paracetamol"},
-    {"napa", "anchor:paracetamol"},
-    {"ace", "anchor:paracetamol"},
-    {"cipro", "anchor:ciprofloxacin"},
-    {"sipro", "anchor:ciprofloxacin"},
-    {"neoflox", "anchor:ciprofloxacin"},
-    {"seclo", "anchor:omeprazole"},
-    {"seslo", "anchor:omeprazole"},
-    {"omepra", "anchor:omeprazole"},
-    {"omepraz", "anchor:omeprazole"}
+    {{:prefix, "aceclo"}, "anchor:aceclofenac"},
+    {{:prefix, "aseclo"}, "anchor:aceclofenac"},
+    {{:prefix, "aseslo"}, "anchor:aceclofenac"},
+    {{:prefix, "flexi"}, "anchor:aceclofenac"},
+    {{:prefix, "parac"}, "anchor:paracetamol"},
+    {{:prefix, "paras"}, "anchor:paracetamol"},
+    {{:prefix, "napa"}, "anchor:paracetamol"},
+    {{:exact, "ace"}, "anchor:paracetamol"},
+    {{:prefix, "cipro"}, "anchor:ciprofloxacin"},
+    {{:prefix, "sipro"}, "anchor:ciprofloxacin"},
+    {{:prefix, "neoflox"}, "anchor:ciprofloxacin"},
+    {{:prefix, "seclo"}, "anchor:omeprazole"},
+    {{:prefix, "seslo"}, "anchor:omeprazole"},
+    {{:prefix, "omepra"}, "anchor:omeprazole"},
+    {{:prefix, "maxpro"}, "anchor:esomeprazole"},
+    {{:prefix, "esomep"}, "anchor:esomeprazole"},
+    {{:prefix, "tofen"}, "anchor:ketotifen"},
+    {{:prefix, "ketot"}, "anchor:ketotifen"},
+    {{:prefix, "cetot"}, "anchor:ketotifen"},
+    {{:prefix, "azith"}, "anchor:azithromycin"},
+    {{:prefix, "asith"}, "anchor:azithromycin"},
+    {{:prefix, "rivot"}, "anchor:clonazepam"},
+    {{:prefix, "clona"}, "anchor:clonazepam"},
+    {{:prefix, "klona"}, "anchor:clonazepam"}
   ]
 
   @doc """
   Generates a 1024-byte binary containing 256 L2-normalized float32 little-endian values.
   """
   def vectorize(text) when is_binary(text) do
-    clean_text =
+    raw_tokens =
       text
       |> String.downcase()
-      |> String.replace(~r/[^a-z0-9\s]/, "")
-      |> String.replace("ph", "f")
-      |> String.replace("k", "c")
-      |> String.replace(~r/c([eiy])/, "s\\1")
-      |> String.replace(~r/s([eiy])/, "s\\1")
+      |> String.replace(~r/[^a-z0-9\s]/, " ")
+      |> String.split(~s{ }, trim: true)
+      |> Enum.reject(&(&1 in @stop_words or Regex.match?(~r/^\d+$/, &1)))
 
-    tokens = String.split(clean_text, ~s{ }, trim: true)
+    clean_tokens =
+      Enum.map(raw_tokens, fn token ->
+        token
+        |> String.replace("ph", "f")
+        |> String.replace("k", "c")
+        |> String.replace("z", "s")
+        |> String.replace("y", "i")
+        |> String.replace(~r/c([eiy])/, "s\\1")
+        |> String.replace(~r/s([eiy])/, "s\\1")
+        |> String.replace("si", "se")
+      end)
 
     ngrams =
-      tokens
+      clean_tokens
       |> Enum.flat_map(fn word ->
         chars = String.to_charlist(word)
 
@@ -57,12 +86,12 @@ defmodule RxGenerator.Support.TestNeuralBackend do
         [word | trigrams]
       end)
 
-    raw_clean = String.downcase(text)
+    all_tokens = Enum.uniq(raw_tokens ++ clean_tokens)
 
     matched_anchors =
       @semantic_anchors
-      |> Enum.flat_map(fn {pattern, anchor_id} ->
-        if String.contains?(clean_text, pattern) or String.contains?(raw_clean, pattern) do
+      |> Enum.flat_map(fn {rule, anchor_id} ->
+        if Enum.any?(all_tokens, &token_matches_rule?(&1, rule)) do
           [anchor_id]
         else
           []
@@ -115,4 +144,7 @@ defmodule RxGenerator.Support.TestNeuralBackend do
       {:ok, binary}
     end
   end
+
+  defp token_matches_rule?(token, {:exact, pattern}), do: token == pattern
+  defp token_matches_rule?(token, {:prefix, pattern}), do: String.starts_with?(token, pattern)
 end
