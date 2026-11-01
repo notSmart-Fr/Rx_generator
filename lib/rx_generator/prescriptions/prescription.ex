@@ -27,7 +27,15 @@ defmodule RxGenerator.Prescriptions.Prescription do
 
     create :create do
       primary? true
-      accept [:rx_number, :patient_name, :prescriber_bmdc_no]
+
+      accept [
+        :rx_number,
+        :patient_name,
+        :prescriber_profile_id,
+        :prescriber_bmdc_no,
+        :prescriber_name,
+        :prescriber_qualifications
+      ]
     end
 
     update :lock do
@@ -100,6 +108,16 @@ defmodule RxGenerator.Prescriptions.Prescription do
       public? true
     end
 
+    attribute :prescriber_name, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :prescriber_qualifications, :string do
+      allow_nil? true
+      public? true
+    end
+
     attribute :canonical_manifest, :string do
       allow_nil? true
       public? true
@@ -120,6 +138,13 @@ defmodule RxGenerator.Prescriptions.Prescription do
   end
 
   relationships do
+    belongs_to :prescriber, RxGenerator.Prescriptions.PrescriberProfile do
+      source_attribute :prescriber_profile_id
+      destination_attribute :id
+      allow_nil? true
+      public? true
+    end
+
     has_many :items, RxGenerator.Prescriptions.PrescriptionItem do
       destination_attribute :prescription_id
       filter expr(is_nil(archived_at))

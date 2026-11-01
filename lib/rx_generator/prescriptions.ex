@@ -10,10 +10,17 @@ defmodule RxGenerator.Prescriptions do
   alias RxGenerator.Prescriptions.BengaliTranslator
   alias RxGenerator.Prescriptions.Crypto
   alias RxGenerator.Prescriptions.Manifest
+  alias RxGenerator.Prescriptions.PrescriberProfile
   alias RxGenerator.Prescriptions.Prescription
   alias RxGenerator.Prescriptions.PrescriptionItem
 
   resources do
+    resource PrescriberProfile do
+      define :create_prescriber_profile, action: :create
+      define :list_prescriber_profiles, action: :read
+      define :update_prescriber_profile, action: :update
+    end
+
     resource Prescription do
       define :create_prescription, action: :create
       define :list_prescriptions, action: :read
@@ -22,6 +29,21 @@ defmodule RxGenerator.Prescriptions do
     resource PrescriptionItem do
       define :create_item, action: :create
       define :list_items, action: :read
+    end
+  end
+
+  @doc """
+  Retrieves the active prescriber profile, returning `{:ok, profile}` or `{:error, :not_found}`.
+  """
+  def get_active_prescriber do
+    PrescriberProfile
+    |> Ash.Query.filter(active == true)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read()
+    |> case do
+      {:ok, [profile | _]} -> {:ok, profile}
+      {:ok, []} -> {:error, :not_found}
+      {:error, err} -> {:error, err}
     end
   end
 
@@ -59,16 +81,38 @@ defmodule RxGenerator.Prescriptions do
   end
 
   @doc """
-  Creates a new draft prescription.
+  Creates a new draft prescription, automatically linking the active prescriber profile
+  if one is configured.
   """
   def create_draft(attrs \\ %{}) do
     rx_number = Map.get(attrs, :rx_number) || generate_rx_number()
+
+    active_prescriber =
+      case get_active_prescriber() do
+        {:ok, profile} -> profile
+        _ -> nil
+      end
 
     params =
       attrs
       |> Map.put(:rx_number, rx_number)
       |> Map.put_new(:patient_name, "Walk-in Patient")
-      |> Map.put_new(:prescriber_bmdc_no, "A-12345")
+      |> Map.put_new(
+        :prescriber_profile_id,
+        active_prescriber && active_prescriber.id
+      )
+      |> Map.put_new(
+        :prescriber_bmdc_no,
+        (active_prescriber && active_prescriber.bmdc_no) || "A-12345"
+      )
+      |> Map.put_new(
+        :prescriber_name,
+        active_prescriber && active_prescriber.name
+      )
+      |> Map.put_new(
+        :prescriber_qualifications,
+        active_prescriber && active_prescriber.qualifications
+      )
 
     Prescription
     |> Ash.Changeset.for_create(:create, params)

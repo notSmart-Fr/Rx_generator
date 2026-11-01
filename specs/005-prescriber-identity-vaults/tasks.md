@@ -40,11 +40,11 @@
 **Independent Test**: Create and update a physician profile, assert `bmdc_no` format validation (`~r/^[A-Z]-\d{4,6}$/i`), assert retrieval of the active profile, and verify credentials link to prescription initialization.
 
 ### Tests for User Story 1 (Test-First Protocol)
-- [ ] T006 [P] [US1] Write unit and domain tests in `test/rx_generator/prescriptions/prescriber_profile_test.exs` asserting valid/invalid BM&DC registration numbers, profile persistence, and active profile retrieval (verify Red before implementation)
+- [X] T006 [P] [US1] Write unit and domain tests in `test/rx_generator/prescriptions/prescriber_profile_test.exs` asserting valid/invalid BM&DC registration numbers, profile persistence, and active profile retrieval (verify Red before implementation)
 
 ### Implementation for User Story 1
-- [ ] T007 [P] [US1] Implement `RxGenerator.Prescriptions.PrescriberProfile` Ash resource in `lib/rx_generator/prescriptions/prescriber_profile.ex` with attributes `name` (string, required), `bmdc_no` (string, required, unique), `qualifications` (string, required), `specialty` (string), and `active` (boolean, default true)
-- [ ] T008 [US1] Register `PrescriberProfile` in the domain and expose `create_prescriber_profile/1`, `get_active_prescriber/0`, and `update_prescriber_profile/2` in `lib/rx_generator/prescriptions.ex`
+- [X] T007 [P] [US1] Implement `RxGenerator.Prescriptions.PrescriberProfile` Ash resource in `lib/rx_generator/prescriptions/prescriber_profile.ex` with attributes `name` (string, required), `bmdc_no` (string, required, unique), `qualifications` (string, required), `specialty` (string), and `active` (boolean, default true)
+- [X] T008 [US1] Register `PrescriberProfile` in the domain and expose `create_prescriber_profile/1`, `get_active_prescriber/0`, and `update_prescriber_profile/2` in `lib/rx_generator/prescriptions.ex`
 
 **Checkpoint**: Prescriber profiles can be created, validated, and queried independently.
 
