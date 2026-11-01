@@ -12,7 +12,37 @@ defmodule RxGenerator.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      consolidate_protocols: Mix.env() != :dev
+      consolidate_protocols: Mix.env() != :dev,
+      usage_rules: usage_rules()
+    ]
+  end
+
+  defp usage_rules do
+    [
+      file: "AGENTS.md",
+      usage_rules: [
+        :usage_rules,
+        {:ash, link: :markdown},
+        {~r/^ash_/, link: :markdown},
+        {"phoenix:all", link: :markdown},
+        {:cinder, link: :markdown},
+        {:igniter, link: :markdown}
+      ],
+      skills: [
+        location: ".agents/skills",
+        build: [
+          "ash-framework": [
+            description:
+              "Load when working with Ash.Resource, domains, actions, calculations, policies, code interfaces, or when debugging Ash errors.",
+            usage_rules: [:ash, ~r/^ash_/]
+          ],
+          "phoenix-framework": [
+            description:
+              "Load when working with Phoenix routers, LiveViews, Heex templates, components, forms, or controllers.",
+            usage_rules: [:phoenix, "phoenix:all"]
+          ]
+        ]
+      ]
     ]
   end
 
