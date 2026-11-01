@@ -8,6 +8,7 @@ defmodule RxGenerator.Prescriptions do
   require Ash.Query
   alias RxGenerator.Formulary.DrugCatalogItem
   alias RxGenerator.Prescriptions.BengaliTranslator
+  alias RxGenerator.Prescriptions.ChamberConfig
   alias RxGenerator.Prescriptions.Crypto
   alias RxGenerator.Prescriptions.Manifest
   alias RxGenerator.Prescriptions.PrescriberProfile
@@ -19,6 +20,12 @@ defmodule RxGenerator.Prescriptions do
       define :create_prescriber_profile, action: :create
       define :list_prescriber_profiles, action: :read
       define :update_prescriber_profile, action: :update
+    end
+
+    resource ChamberConfig do
+      define :create_chamber, action: :create
+      define :list_chambers, action: :read
+      define :update_chamber, action: :update
     end
 
     resource Prescription do
@@ -44,6 +51,52 @@ defmodule RxGenerator.Prescriptions do
       {:ok, [profile | _]} -> {:ok, profile}
       {:ok, []} -> {:error, :not_found}
       {:error, err} -> {:error, err}
+    end
+  end
+
+  @doc """
+  Lists active chambers for a prescriber profile.
+  """
+  def list_chambers_for_prescriber(prescriber_profile_id) when is_binary(prescriber_profile_id) do
+    ChamberConfig
+    |> Ash.Query.for_read(:list_for_prescriber, %{prescriber_profile_id: prescriber_profile_id})
+    |> Ash.read()
+  end
+
+  @doc """
+  Sets a chamber as the default for its prescriber.
+  """
+  def set_default_chamber(%ChamberConfig{} = chamber) do
+    chamber
+    |> Ash.Changeset.for_update(:set_as_default, %{})
+    |> Ash.update()
+  end
+
+  @doc """
+  Sets the active chamber on a draft prescription, snapshotting its details.
+  """
+  def set_prescription_chamber(%Prescription{} = prescription, chamber_id)
+      when is_binary(chamber_id) do
+    case Ash.get(ChamberConfig, chamber_id) do
+      {:ok, chamber} ->
+        if not chamber.active do
+          {:error, :inactive_chamber}
+        else
+          attrs = %{
+            chamber_config_id: chamber.id,
+            chamber_name: chamber.chamber_name,
+            chamber_address: chamber.address,
+            chamber_schedule: chamber.visiting_hours,
+            chamber_phone: chamber.contact_phone
+          }
+
+          prescription
+          |> Ash.Changeset.for_update(:set_chamber, attrs)
+          |> Ash.update()
+        end
+
+      error ->
+        error
     end
   end
 
@@ -93,6 +146,16 @@ defmodule RxGenerator.Prescriptions do
         _ -> nil
       end
 
+    default_chamber =
+      if active_prescriber do
+        case list_chambers_for_prescriber(active_prescriber.id) do
+          {:ok, [ch | _]} -> ch
+          _ -> nil
+        end
+      else
+        nil
+      end
+
     params =
       attrs
       |> Map.put(:rx_number, rx_number)
@@ -112,6 +175,26 @@ defmodule RxGenerator.Prescriptions do
       |> Map.put_new(
         :prescriber_qualifications,
         active_prescriber && active_prescriber.qualifications
+      )
+      |> Map.put_new(
+        :chamber_config_id,
+        default_chamber && default_chamber.id
+      )
+      |> Map.put_new(
+        :chamber_name,
+        default_chamber && default_chamber.chamber_name
+      )
+      |> Map.put_new(
+        :chamber_address,
+        default_chamber && default_chamber.address
+      )
+      |> Map.put_new(
+        :chamber_schedule,
+        default_chamber && default_chamber.visiting_hours
+      )
+      |> Map.put_new(
+        :chamber_phone,
+        default_chamber && default_chamber.contact_phone
       )
 
     Prescription

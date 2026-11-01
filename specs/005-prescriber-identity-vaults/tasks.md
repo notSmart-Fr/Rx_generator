@@ -57,14 +57,14 @@
 **Independent Test**: Configure two distinct practice chambers, attach them to a draft prescription, switch between them via LiveView event, assert immediate canvas header updates (< 15ms), and assert chamber switching is rejected when locked.
 
 ### Tests for User Story 2 (Test-First Protocol)
-- [ ] T009 [P] [US2] Write chamber resource tests in `test/rx_generator/prescriptions/chamber_config_test.exs` asserting chamber creation, default chamber flags, and prescriber associations (verify Red before implementation)
-- [ ] T010 [P] [US2] Write LiveView interaction tests in `test/rx_generator_web/live/prescription_live/chamber_switcher_test.exs` asserting `switch_chamber` event updates canvas headers and is disabled on locked prescriptions (verify Red before implementation)
+- [X] T009 [P] [US2] Write chamber resource tests in `test/rx_generator/prescriptions/chamber_config_test.exs` asserting chamber creation, default chamber flags, and prescriber associations (verify Red before implementation)
+- [X] T010 [P] [US2] Write LiveView interaction tests in `test/rx_generator_web/live/prescription_live/chamber_switcher_test.exs` asserting `switch_chamber` event updates canvas headers and is disabled on locked prescriptions (verify Red before implementation)
 
 ### Implementation for User Story 2
-- [ ] T011 [P] [US2] Implement `RxGenerator.Prescriptions.ChamberConfig` Ash resource in `lib/rx_generator/prescriptions/chamber_config.ex` with attributes `prescriber_profile_id` (uuid, required), `chamber_name` (string, required), `hospital_name` (string), `address` (string, required), `visiting_hours` (string, required), `contact_phone` (string), `is_default` (boolean, default false), and `active` (boolean, default true)
-- [ ] T012 [US2] Expose chamber management actions `list_chambers_for_prescriber/1`, `create_chamber/1`, `set_default_chamber/1`, and `set_prescription_chamber/2` in `lib/rx_generator/prescriptions.ex`
-- [ ] T013 [US2] Add chamber switcher dropdown/pills and active chamber state handling in `lib/rx_generator_web/live/prescription_live.ex` handling `switch_chamber` events
-- [ ] T014 [US2] Update canvas header components in `lib/rx_generator_web/components/core_components.ex` to render doctor credentials and active chamber banner per `contracts/chamber_switcher_contract.md`
+- [X] T011 [P] [US2] Implement `RxGenerator.Prescriptions.ChamberConfig` Ash resource in `lib/rx_generator/prescriptions/chamber_config.ex` with attributes `prescriber_profile_id` (uuid, required), `chamber_name` (string, required), `hospital_name` (string), `address` (string, required), `visiting_hours` (string, required), `contact_phone` (string), `is_default` (boolean, default false), and `active` (boolean, default true)
+- [X] T012 [US2] Expose chamber management actions `list_chambers_for_prescriber/1`, `create_chamber/1`, `set_default_chamber/1`, and `set_prescription_chamber/2` in `lib/rx_generator/prescriptions.ex`
+- [X] T013 [US2] Add chamber switcher dropdown/pills and active chamber state handling in `lib/rx_generator_web/live/prescription_live.ex` handling `switch_chamber` events
+- [X] T014 [US2] Update canvas header components in `lib/rx_generator_web/components/core_components.ex` to render doctor credentials and active chamber banner per `contracts/chamber_switcher_contract.md`
 
 **Checkpoint**: Multi-chamber configuration and real-time LiveView switching are functional and independently testable.
 

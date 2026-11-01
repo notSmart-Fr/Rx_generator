@@ -129,4 +129,11 @@ defmodule RxGenerator.Prescriptions.PrescriberProfile do
   identities do
     identity :unique_bmdc_no, [:bmdc_no]
   end
+
+  relationships do
+    has_many :chambers, RxGenerator.Prescriptions.ChamberConfig do
+      destination_attribute :prescriber_profile_id
+      filter expr(active == true)
+    end
+  end
 end

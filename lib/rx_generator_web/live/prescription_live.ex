@@ -13,6 +13,32 @@ defmodule RxGeneratorWeb.PrescriptionLive do
         _ -> nil
       end
 
+    prescriber =
+      case Prescriptions.get_active_prescriber() do
+        {:ok, p} -> p
+        _ -> nil
+      end
+
+    chambers =
+      if prescriber do
+        case Prescriptions.list_chambers_for_prescriber(prescriber.id) do
+          {:ok, list} -> list
+          _ -> []
+        end
+      else
+        []
+      end
+
+    active_chamber =
+      cond do
+        draft && draft.chamber_config_id ->
+          Enum.find(chambers, &(&1.id == draft.chamber_config_id)) ||
+            List.first(chambers)
+
+        true ->
+          Enum.find(chambers, & &1.is_default) || List.first(chambers)
+      end
+
     items = if draft, do: draft.items || [], else: []
     qr_svg = compute_qr_svg(draft)
 
@@ -24,6 +50,9 @@ defmodule RxGeneratorWeb.PrescriptionLive do
        candidates: [],
        highlighted_index: 0,
        draft: draft,
+       prescriber: prescriber,
+       chambers: chambers,
+       active_chamber: active_chamber,
        items: items,
        qr_svg: qr_svg
      )}
@@ -48,12 +77,44 @@ defmodule RxGeneratorWeb.PrescriptionLive do
           items={@items}
           state={if(@draft, do: @draft.state, else: :draft)}
           rx_number={if(@draft, do: @draft.rx_number, else: nil)}
-          prescriber_bmdc_no={if(@draft, do: @draft.prescriber_bmdc_no, else: nil)}
+          prescriber={@prescriber}
+          chambers={@chambers}
+          active_chamber={@active_chamber}
+          draft={@draft}
           qr_svg={@qr_svg}
         />
       </div>
     </div>
     """
+  end
+
+  @impl true
+  def handle_event("switch_chamber", %{"chamber_id" => chamber_id}, socket) do
+    draft = socket.assigns.draft
+
+    if draft && draft.state == :locked do
+      {:noreply, socket}
+    else
+      chambers = socket.assigns.chambers
+
+      case Enum.find(chambers, &(&1.id == chamber_id)) do
+        nil ->
+          {:noreply, socket}
+
+        new_chamber ->
+          updated_draft =
+            if draft do
+              case Prescriptions.set_prescription_chamber(draft, chamber_id) do
+                {:ok, updated} -> updated
+                _ -> draft
+              end
+            else
+              draft
+            end
+
+          {:noreply, assign(socket, active_chamber: new_chamber, draft: updated_draft)}
+      end
+    end
   end
 
   @impl true

@@ -598,19 +598,153 @@ defmodule RxGeneratorWeb.CoreComponents do
   attr :items, :list, default: []
   attr :state, :atom, default: :draft
   attr :rx_number, :string, default: nil
+  attr :prescriber, :map, default: nil
+  attr :chambers, :list, default: []
+  attr :active_chamber, :map, default: nil
+  attr :draft, :map, default: nil
   attr :prescriber_bmdc_no, :string, default: nil
   attr :qr_svg, :string, default: nil
 
   def prescription_canvas(assigns) do
+    # Resolve prescriber info from prescriber struct or draft snapshot
+    doctor_name =
+      (assigns[:prescriber] && assigns[:prescriber].name) ||
+        (assigns[:draft] && assigns[:draft].prescriber_name) ||
+        "Dr. Tariqul Islam"
+
+    bmdc_no =
+      (assigns[:prescriber] && assigns[:prescriber].bmdc_no) ||
+        (assigns[:draft] && assigns[:draft].prescriber_bmdc_no) ||
+        assigns[:prescriber_bmdc_no] ||
+        "A-12345"
+
+    qualifications =
+      (assigns[:prescriber] && assigns[:prescriber].qualifications) ||
+        (assigns[:draft] && assigns[:draft].prescriber_qualifications) ||
+        "MBBS (DMC), FCPS"
+
+    specialty = assigns[:prescriber] && assigns[:prescriber].specialty
+
+    # Resolve chamber info from active_chamber or draft snapshot
+    ch_name =
+      (assigns[:active_chamber] && assigns[:active_chamber].chamber_name) ||
+        (assigns[:draft] && assigns[:draft].chamber_name)
+
+    ch_address =
+      (assigns[:active_chamber] && assigns[:active_chamber].address) ||
+        (assigns[:draft] && assigns[:draft].chamber_address)
+
+    ch_schedule =
+      (assigns[:active_chamber] && assigns[:active_chamber].visiting_hours) ||
+        (assigns[:draft] && assigns[:draft].chamber_schedule)
+
+    ch_phone =
+      (assigns[:active_chamber] && assigns[:active_chamber].contact_phone) ||
+        (assigns[:draft] && assigns[:draft].chamber_phone)
+
+    assigns =
+      assigns
+      |> assign(:doctor_name, doctor_name)
+      |> assign(:bmdc_no, bmdc_no)
+      |> assign(:qualifications, qualifications)
+      |> assign(:specialty, specialty)
+      |> assign(:ch_name, ch_name)
+      |> assign(:ch_address, ch_address)
+      |> assign(:ch_schedule, ch_schedule)
+      |> assign(:ch_phone, ch_phone)
+
     ~H"""
     <div
       id={@id}
       class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-100"
     >
-      <div class="border-b border-zinc-200 pb-4 mb-6 flex justify-between items-center">
+      <!-- Prescriber & Chamber Header Banner -->
+      <div class="border-b-2 border-zinc-900 pb-5 mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+          <!-- Doctor Credentials (Left) -->
+          <div class="space-y-1">
+            <h1 id="canvas-prescriber-name" class="text-2xl font-black text-zinc-900 tracking-tight">
+              {@doctor_name}
+            </h1>
+            <p id="canvas-prescriber-qualifications" class="text-xs font-semibold text-zinc-700">
+              {@qualifications} {if @specialty, do: "• #{@specialty}"}
+            </p>
+            <p class="text-xs text-zinc-500">
+              BM&DC Reg. No:
+              <span id="canvas-prescriber-bmdc" class="font-mono font-bold text-zinc-900">
+                {@bmdc_no}
+              </span>
+            </p>
+          </div>
+
+          <!-- Chamber Banner (Right) -->
+          <div class="sm:text-right space-y-1 sm:max-w-xs">
+            <%= if @ch_name do %>
+              <h3 id="canvas-chamber-name" class="text-base font-bold text-zinc-900">
+                {@ch_name}
+              </h3>
+              <p id="canvas-chamber-address" class="text-xs text-zinc-600">
+                {@ch_address}
+              </p>
+              <%= if @ch_schedule do %>
+                <p class="text-[11px] text-zinc-500">
+                  Hours:
+                  <span id="canvas-chamber-schedule" class="font-medium text-zinc-700">
+                    {@ch_schedule}
+                  </span>
+                </p>
+              <% end %>
+              <%= if @ch_phone do %>
+                <p class="text-[11px] text-zinc-500">
+                  Tel:
+                  <span id="canvas-chamber-phone" class="font-mono font-medium text-zinc-700">
+                    {@ch_phone}
+                  </span>
+                </p>
+              <% end %>
+            <% else %>
+              <div class="text-xs text-zinc-400 italic">No chamber selected</div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Chamber Switcher Controls (Hidden on Print & Locked) -->
+        <%= if @chambers != [] && @state != :locked do %>
+          <div
+            id="chamber-switcher"
+            class="mt-4 pt-3 border-t border-zinc-100 flex flex-wrap items-center gap-2 print:hidden"
+          >
+            <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mr-1">
+              Active Chamber:
+            </span>
+            <div class="flex flex-wrap gap-1.5" id="chamber-select-dropdown">
+              <%= for chamber <- @chambers do %>
+                <button
+                  type="button"
+                  phx-click="switch_chamber"
+                  phx-value-chamber_id={chamber.id}
+                  class={[
+                    "px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer",
+                    if(@active_chamber && @active_chamber.id == chamber.id,
+                      do:
+                        "bg-zinc-900 text-white shadow-sm ring-2 ring-zinc-900 ring-offset-1 font-bold",
+                      else: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                    )
+                  ]}
+                >
+                  {chamber.chamber_name}
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Prescription Status & Metadata Bar -->
+      <div class="border-b border-zinc-200 pb-3 mb-6 flex justify-between items-center">
         <div>
           <div class="flex items-center gap-3">
-            <h2 class="text-2xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
+            <h2 class="text-xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
             <%= if @state == :locked do %>
               <span
                 id="prescription-locked-badge"

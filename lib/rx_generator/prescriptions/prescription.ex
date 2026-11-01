@@ -34,8 +34,33 @@ defmodule RxGenerator.Prescriptions.Prescription do
         :prescriber_profile_id,
         :prescriber_bmdc_no,
         :prescriber_name,
-        :prescriber_qualifications
+        :prescriber_qualifications,
+        :chamber_config_id,
+        :chamber_name,
+        :chamber_address,
+        :chamber_schedule,
+        :chamber_phone
       ]
+    end
+
+    update :set_chamber do
+      require_atomic? false
+
+      accept [
+        :chamber_config_id,
+        :chamber_name,
+        :chamber_address,
+        :chamber_schedule,
+        :chamber_phone
+      ]
+
+      validate fn changeset, _context ->
+        if changeset.data.state == :locked do
+          {:error, field: :state, message: "cannot change chamber on a locked prescription"}
+        else
+          :ok
+        end
+      end
     end
 
     update :lock do
@@ -118,6 +143,31 @@ defmodule RxGenerator.Prescriptions.Prescription do
       public? true
     end
 
+    attribute :chamber_config_id, :uuid do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :chamber_name, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :chamber_address, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :chamber_schedule, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :chamber_phone, :string do
+      allow_nil? true
+      public? true
+    end
+
     attribute :canonical_manifest, :string do
       allow_nil? true
       public? true
@@ -140,6 +190,13 @@ defmodule RxGenerator.Prescriptions.Prescription do
   relationships do
     belongs_to :prescriber, RxGenerator.Prescriptions.PrescriberProfile do
       source_attribute :prescriber_profile_id
+      destination_attribute :id
+      allow_nil? true
+      public? true
+    end
+
+    belongs_to :chamber, RxGenerator.Prescriptions.ChamberConfig do
+      source_attribute :chamber_config_id
       destination_attribute :id
       allow_nil? true
       public? true
