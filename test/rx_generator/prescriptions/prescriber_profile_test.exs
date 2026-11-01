@@ -1,5 +1,5 @@
 defmodule RxGenerator.Prescriptions.PrescriberProfileTest do
-  use RxGenerator.DataCase, async: true
+  use RxGenerator.DataCase, async: false
 
   alias RxGenerator.Prescriptions
 

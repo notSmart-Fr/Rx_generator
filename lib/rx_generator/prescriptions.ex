@@ -55,6 +55,15 @@ defmodule RxGenerator.Prescriptions do
   end
 
   @doc """
+  Updates patient demographic and clinical details on a draft prescription.
+  """
+  def update_patient_details(%Prescription{} = prescription, params) when is_map(params) do
+    prescription
+    |> Ash.Changeset.for_update(:update_patient_details, params)
+    |> Ash.update()
+  end
+
+  @doc """
   Lists active chambers for a prescriber profile.
   """
   def list_chambers_for_prescriber(prescriber_profile_id) when is_binary(prescriber_profile_id) do

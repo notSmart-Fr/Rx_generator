@@ -767,6 +767,98 @@ defmodule RxGeneratorWeb.CoreComponents do
         </div>
       </div>
 
+      <!-- Patient Data Vault Section (Encrypted at Rest) -->
+      <div
+        id="patient-vault-fields"
+        class="bg-zinc-50/70 border border-zinc-200/80 rounded-xl p-4 mb-6 transition-all"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
+            <.icon name="hero-shield-check" class="w-4 h-4 text-emerald-600" />
+            Patient Data Vault (Encrypted AES-256-GCM)
+          </span>
+          <span class="text-[10px] text-zinc-400 uppercase tracking-widest">
+            Protected Health Information (PHI)
+          </span>
+        </div>
+
+        <%= if @state != :locked do %>
+          <form id="patient-vault-form" phx-change="update_patient_vault" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
+                  Patient Name
+                </label>
+                <input
+                  type="text"
+                  name="patient_name"
+                  value={(@draft && @draft.patient_name) || ""}
+                  placeholder="e.g. Rahim Uddin"
+                  phx-debounce="300"
+                  class="w-full text-xs rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
+                />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
+                  Contact Phone
+                </label>
+                <input
+                  type="text"
+                  name="patient_phone"
+                  value={(@draft && @draft.patient_phone) || ""}
+                  placeholder="e.g. +880 1712-345678"
+                  phx-debounce="300"
+                  class="w-full text-xs font-mono rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
+                />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
+                  Age / Gender
+                </label>
+                <input
+                  type="text"
+                  name="patient_age"
+                  value={(@draft && @draft.patient_age) || ""}
+                  placeholder="e.g. 48Y / Male"
+                  phx-debounce="300"
+                  class="w-full text-xs rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
+                Clinical Notes / History
+              </label>
+              <input
+                type="text"
+                name="clinical_notes"
+                value={(@draft && @draft.clinical_notes) || ""}
+                placeholder="Chief complaints, diagnosis notes, or allergy alerts..."
+                phx-debounce="300"
+                class="w-full text-xs rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
+              />
+            </div>
+          </form>
+        <% else %>
+          <div class="space-y-2 text-xs">
+            <div class="flex flex-wrap gap-4 text-zinc-800">
+              <span><strong>Patient:</strong> {(@draft && @draft.patient_name) || "Walk-in"}</span>
+              <%= if @draft && @draft.patient_phone do %>
+                <span><strong>Phone:</strong> {@draft.patient_phone}</span>
+              <% end %>
+              <%= if @draft && @draft.patient_age do %>
+                <span><strong>Age:</strong> {@draft.patient_age}</span>
+              <% end %>
+            </div>
+            <%= if @draft && @draft.clinical_notes do %>
+              <p class="text-zinc-600 border-t border-zinc-200/60 pt-1.5 text-[11px]">
+                <strong>Clinical Notes:</strong> {@draft.clinical_notes}
+              </p>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
       <div class="space-y-4">
         <%= if @items == [] do %>
           <div class="text-center py-16 text-zinc-400 border-2 border-dashed border-zinc-200 rounded-xl">

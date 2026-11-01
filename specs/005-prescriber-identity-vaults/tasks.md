@@ -77,12 +77,12 @@
 **Independent Test**: Create prescriptions with patient demographic data, assert raw SQLite queries return binary ciphertexts starting with `"AES.GCM.V1"`, verify zero plaintext occurrences in the database file, and assert transparent in-memory decryption when loaded through Ash.
 
 ### Tests for User Story 3 (Test-First Protocol)
-- [ ] T015 [P] [US3] Write vault encryption tests in `test/rx_generator/prescriptions/patient_vault_encryption_test.exs` asserting raw SQLite BLOB ciphertext via direct `Repo.query!/2`, zero plaintext leakage, and transparent Ash calculation decryption (verify Red before implementation)
+- [X] T015 [P] [US3] Write vault encryption tests in `test/rx_generator/prescriptions/patient_vault_encryption_test.exs` asserting raw SQLite BLOB ciphertext via direct `Repo.query!/2`, zero plaintext leakage, and transparent Ash calculation decryption (verify Red before implementation)
 
 ### Implementation for User Story 3
-- [ ] T016 [US3] Configure `AshCloak` extension and `cloak` block on `RxGenerator.Prescriptions.Prescription` in `lib/rx_generator/prescriptions/prescription.ex` encrypting `:patient_name`, `:patient_phone`, `:patient_age`, and `:clinical_notes` via `RxGenerator.Vault` with `encrypt_nil?: false`
-- [ ] T017 [US3] Add patient vault update actions `update_patient_details/2` in `lib/rx_generator/prescriptions/prescription.ex` and expose them in `lib/rx_generator/prescriptions.ex`
-- [ ] T018 [US3] Update LiveView patient inputs in `lib/rx_generator_web/live/prescription_live.ex` and `lib/rx_generator_web/components/core_components.ex` to display and edit decrypted patient vault attributes
+- [X] T016 [US3] Configure `AshCloak` extension and `cloak` block on `RxGenerator.Prescriptions.Prescription` in `lib/rx_generator/prescriptions/prescription.ex` encrypting `:patient_name`, `:patient_phone`, `:patient_age`, and `:clinical_notes` via `RxGenerator.Vault` with `encrypt_nil?: false`
+- [X] T017 [US3] Add patient vault update actions `update_patient_details/2` in `lib/rx_generator/prescriptions/prescription.ex` and expose them in `lib/rx_generator/prescriptions.ex`
+- [X] T018 [US3] Update LiveView patient inputs in `lib/rx_generator_web/live/prescription_live.ex` and `lib/rx_generator_web/components/core_components.ex` to display and edit decrypted patient vault attributes
 
 **Checkpoint**: Patient Protected Health Information is encrypted at rest with verified raw ciphertext invariants.
 

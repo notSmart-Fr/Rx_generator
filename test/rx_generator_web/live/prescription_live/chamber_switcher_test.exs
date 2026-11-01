@@ -1,5 +1,5 @@
 defmodule RxGeneratorWeb.PrescriptionLive.ChamberSwitcherTest do
-  use RxGeneratorWeb.ConnCase, async: true
+  use RxGeneratorWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
 
   alias RxGenerator.Prescriptions

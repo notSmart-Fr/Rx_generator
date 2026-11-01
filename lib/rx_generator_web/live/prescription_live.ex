@@ -118,6 +118,44 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   end
 
   @impl true
+  def handle_event("update_patient_vault", params, socket) do
+    draft =
+      case socket.assigns.draft do
+        nil ->
+          case Prescriptions.get_or_create_active_draft() do
+            {:ok, d} -> d
+            _ -> nil
+          end
+
+        d ->
+          d
+      end
+
+    if draft && draft.state == :locked do
+      {:noreply, socket}
+    else
+      patient_params = %{
+        patient_name: params["patient_name"],
+        patient_phone: params["patient_phone"],
+        patient_age: params["patient_age"],
+        clinical_notes: params["clinical_notes"]
+      }
+
+      if draft do
+        case Prescriptions.update_patient_details(draft, patient_params) do
+          {:ok, updated} ->
+            {:noreply, assign(socket, draft: updated)}
+
+          {:error, _err} ->
+            {:noreply, socket}
+        end
+      else
+        {:noreply, socket}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("parse_and_suggest", params, socket) do
     query = params["query"] || params["value"] || ""
     trimmed = String.trim(query)

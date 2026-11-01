@@ -6,7 +6,14 @@ defmodule RxGenerator.Prescriptions.Prescription do
     otp_app: :rx_generator,
     domain: RxGenerator.Prescriptions,
     data_layer: AshSqlite.DataLayer,
-    extensions: [AshStateMachine]
+    extensions: [AshCloak, AshStateMachine]
+
+  cloak do
+    vault RxGenerator.Vault
+    attributes [:patient_name, :patient_phone, :patient_age, :clinical_notes]
+    decrypt_by_default [:patient_name, :patient_phone, :patient_age, :clinical_notes]
+    encrypt_nil? false
+  end
 
   sqlite do
     table "prescriptions"
@@ -31,6 +38,9 @@ defmodule RxGenerator.Prescriptions.Prescription do
       accept [
         :rx_number,
         :patient_name,
+        :patient_phone,
+        :patient_age,
+        :clinical_notes,
         :prescriber_profile_id,
         :prescriber_bmdc_no,
         :prescriber_name,
@@ -41,6 +51,25 @@ defmodule RxGenerator.Prescriptions.Prescription do
         :chamber_schedule,
         :chamber_phone
       ]
+    end
+
+    update :update_patient_details do
+      require_atomic? false
+
+      accept [
+        :patient_name,
+        :patient_phone,
+        :patient_age,
+        :clinical_notes
+      ]
+
+      validate fn changeset, _context ->
+        if changeset.data.state == :locked do
+          {:error, field: :state, message: "cannot update patient details on a locked prescription"}
+        else
+          :ok
+        end
+      end
     end
 
     update :set_chamber do
@@ -124,6 +153,21 @@ defmodule RxGenerator.Prescriptions.Prescription do
     end
 
     attribute :patient_name, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :patient_phone, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :patient_age, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :clinical_notes, :string do
       allow_nil? true
       public? true
     end
