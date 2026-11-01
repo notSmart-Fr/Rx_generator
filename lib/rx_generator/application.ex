@@ -9,6 +9,7 @@ defmodule RxGenerator.Application do
   def start(_type, _args) do
     children = [
       RxGeneratorWeb.Telemetry,
+      RxGenerator.Vault,
       RxGenerator.Repo,
       {Ecto.Migrator,
        repos: Application.fetch_env!(:rx_generator, :ecto_repos), skip: skip_migrations?()},

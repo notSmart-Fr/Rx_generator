@@ -56,6 +56,17 @@ config :spark,
     remove_parens?: true
   ]
 
+config :rx_generator, RxGenerator.Vault,
+  json_library: Jason,
+  ciphers: [
+    default: {
+      Cloak.Ciphers.AES.GCM,
+      tag: "AES.GCM.V1",
+      key: :crypto.hash(:sha256, "rx_generator_edge_vault_master_key_2026"),
+      iv_length: 12
+    }
+  ]
+
 config :rx_generator, RxGenerator.Repo, timeout: 15_000, busy_timeout: 16_000
 
 config :rx_generator, :print_spooler, RxGenerator.Printing.OSSpooler

@@ -1,6 +1,17 @@
 import Config
 config :ash, disable_async?: true, policies: [show_policy_breakdowns?: true]
 
+config :rx_generator, RxGenerator.Vault,
+  json_library: Jason,
+  ciphers: [
+    default: {
+      Cloak.Ciphers.AES.GCM,
+      tag: "AES.GCM.V1",
+      key: :crypto.hash(:sha256, "rx_generator_test_vault_key_2026"),
+      iv_length: 12
+    }
+  ]
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used

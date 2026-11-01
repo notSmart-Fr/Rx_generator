@@ -14,9 +14,9 @@
 
 **Purpose**: Initialize encryption vault configuration and OTP supervision tree for edge-native operation.
 
-- [ ] T001 Configure `RxGenerator.Vault` in `config/config.exs` and `config/test.exs` setting up `Cloak.Ciphers.AES.GCM` with 256-bit key resolution and `json_library: Jason`
-- [ ] T002 [P] Implement `RxGenerator.Vault` module in `lib/rx_generator/vault.ex` using `use Cloak.Vault, otp_app: :rx_generator` with deterministic edge fallback key resolution
-- [ ] T003 Add `RxGenerator.Vault` as a permanent worker in the OTP supervision tree in `lib/rx_generator/application.ex` prior to endpoint and domain processes
+- [X] T001 Configure `RxGenerator.Vault` in `config/config.exs` and `config/test.exs` setting up `Cloak.Ciphers.AES.GCM` with 256-bit key resolution and `json_library: Jason`
+- [X] T002 [P] Implement `RxGenerator.Vault` module in `lib/rx_generator/vault.ex` using `use Cloak.Vault, otp_app: :rx_generator` with deterministic edge fallback key resolution
+- [X] T003 Add `RxGenerator.Vault` as a permanent worker in the OTP supervision tree in `lib/rx_generator/application.ex` prior to endpoint and domain processes
 
 ---
 
@@ -26,8 +26,8 @@
 
 **⚠️ CRITICAL**: Must complete before user stories begin.
 
-- [ ] T004 Create database migration in `priv/repo/migrations/20261101160000_setup_prescriber_vault_chambers.exs` creating `prescriber_profiles` and `chamber_configs` tables and adding encrypted BLOB columns (`encrypted_patient_name`, `encrypted_patient_phone`, `encrypted_patient_age`, `encrypted_clinical_notes`) and snapshot fields to `prescriptions`
-- [ ] T005 [P] Create test fixture helpers in `test/support/prescriber_fixtures.ex` generating valid `PrescriberProfile`, `ChamberConfig`, and encrypted prescription test structs
+- [X] T004 Create database migration in `priv/repo/migrations/20261101160000_setup_prescriber_vault_chambers.exs` creating `prescriber_profiles` and `chamber_configs` tables and adding encrypted BLOB columns (`encrypted_patient_name`, `encrypted_patient_phone`, `encrypted_patient_age`, `encrypted_clinical_notes`) and snapshot fields to `prescriptions`
+- [X] T005 [P] Create test fixture helpers in `test/support/prescriber_fixtures.ex` generating valid `PrescriberProfile`, `ChamberConfig`, and encrypted prescription test structs
 
 **Checkpoint**: Foundation ready — database schema and cryptographic vault initialized.
 
