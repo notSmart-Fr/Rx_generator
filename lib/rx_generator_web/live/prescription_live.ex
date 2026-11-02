@@ -74,6 +74,7 @@ defmodule RxGeneratorWeb.PrescriptionLive do
         <% end %>
         <.prescription_canvas
           id="prescription-canvas"
+          phx-hook="PrintPrescription"
           items={@items}
           state={if(@draft, do: @draft.state, else: :draft)}
           rx_number={if(@draft, do: @draft.rx_number, else: nil)}

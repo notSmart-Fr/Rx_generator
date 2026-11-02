@@ -113,11 +113,11 @@
 **Independent Test**: Render print view for a locked prescription, verify two-column header with doctor credentials and chamber details, assert bold uppercase generic molecule typography, and assert `@media print` suppresses omnibars and switcher buttons.
 
 ### Tests for User Story 5 (Test-First Protocol)
-- [ ] T023 [P] [US5] Write print layout integration tests in `test/rx_generator_web/live/prescription_live/print_layout_test.exs` asserting presence of chamber banner, doctor qualifications, uppercase generic molecules, and print CSS utility classes (verify Red before implementation)
+- [X] T023 [P] [US5] Write print layout integration tests in `test/rx_generator_web/live/prescription_live/print_layout_test.exs` asserting presence of chamber banner, doctor qualifications, uppercase generic molecules, and print CSS utility classes (verify Red before implementation)
 
 ### Implementation for User Story 5
-- [ ] T024 [US5] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to render the High Court compliant two-column printable header (physician on left, chamber on right) and attach `@media print` visibility rules
-- [ ] T025 [US5] Wire print triggering and dynamic chamber snapshot assigns in `lib/rx_generator_web/live/prescription_live.ex`
+- [X] T024 [US5] Update `<.prescription_canvas>` in `lib/rx_generator_web/components/core_components.ex` to render the High Court compliant two-column printable header (physician on left, chamber on right) and attach `@media print` visibility rules
+- [X] T025 [US5] Wire print triggering and dynamic chamber snapshot assigns in `lib/rx_generator_web/live/prescription_live.ex`
 
 **Checkpoint**: Printable layout cleanly outputs doctor credentials and active chamber headers compliant with High Court directives.
 

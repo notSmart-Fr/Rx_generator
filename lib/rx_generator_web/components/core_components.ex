@@ -604,6 +604,7 @@ defmodule RxGeneratorWeb.CoreComponents do
   attr :draft, :map, default: nil
   attr :prescriber_bmdc_no, :string, default: nil
   attr :qr_svg, :string, default: nil
+  attr :"phx-hook", :string, default: nil
 
   def prescription_canvas(assigns) do
     # Resolve prescriber info from prescriber struct or draft snapshot
@@ -656,6 +657,7 @@ defmodule RxGeneratorWeb.CoreComponents do
     ~H"""
     <div
       id={@id}
+      phx-hook={assigns[:"phx-hook"]}
       class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-100"
     >
       <!-- Prescriber & Chamber Header Banner -->
@@ -915,6 +917,32 @@ defmodule RxGeneratorWeb.CoreComponents do
           </div>
         <% end %>
       </div>
+
+      <!-- Verification Seal Footer (Visible in Locked Print & Screen) -->
+      <%= if @state == :locked && @qr_svg do %>
+        <div class="mt-8 pt-6 border-t border-zinc-200 hidden print:flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-20 h-20 p-1 bg-white border border-zinc-300 rounded-lg flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full">
+              {Phoenix.HTML.raw(@qr_svg)}
+            </div>
+            <div class="space-y-0.5">
+              <p class="text-xs font-bold text-zinc-900">
+                Official Digital Verification Seal
+              </p>
+              <p class="text-[11px] text-zinc-600 font-mono">
+                BM&DC: {@bmdc_no}
+              </p>
+              <p class="text-[10px] text-zinc-500">
+                Digitally signed with Ed25519 &bull; Verifiable offline via 2D Barcode
+              </p>
+            </div>
+          </div>
+          <div class="text-right text-[10px] text-zinc-400">
+            High Court Generics Compliant<br />
+            RxGenerator Edge Engine
+          </div>
+        </div>
+      <% end %>
 
       <div class="mt-8 pt-6 border-t border-zinc-200 flex justify-between items-center print:hidden">
         <div>
