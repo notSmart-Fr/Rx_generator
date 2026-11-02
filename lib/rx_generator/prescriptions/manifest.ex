@@ -2,15 +2,18 @@ defmodule RxGenerator.Prescriptions.Manifest do
   @moduledoc """
   Encapsulates the deterministic canonical manifest data structure and serialization
   for tamper-evident Ed25519 cryptographic signing and compact QR code rendering.
+
+  Manifest V2 Canonical Schema:
+  `v2|<rx_number>|<prescriber_bmdc_no>|<chamber_token>|<timestamp>|<serialized_item_1>|<serialized_item_2>|...`
   """
 
   alias RxGenerator.Prescriptions.Prescription
   alias RxGenerator.Prescriptions.PrescriptionItem
 
-  @version "v1"
+  @version "v2"
 
-  @enforce_keys [:version, :rx_number, :prescriber_bmdc_no, :timestamp, :items]
-  defstruct [:version, :rx_number, :prescriber_bmdc_no, :timestamp, :items]
+  @enforce_keys [:version, :rx_number, :prescriber_bmdc_no, :chamber_token, :timestamp, :items]
+  defstruct [:version, :rx_number, :prescriber_bmdc_no, :chamber_token, :timestamp, :items]
 
   @type item_token :: {
           short_drug_id :: String.t(),
@@ -23,6 +26,7 @@ defmodule RxGenerator.Prescriptions.Manifest do
           version: String.t(),
           rx_number: String.t(),
           prescriber_bmdc_no: String.t(),
+          chamber_token: String.t(),
           timestamp: integer(),
           items: [item_token()]
         }
@@ -30,8 +34,8 @@ defmodule RxGenerator.Prescriptions.Manifest do
   @doc """
   Compiles a deterministic canonical manifest string from a Prescription and its items.
 
-  Rules:
-  1. Header: `v1|<rx_number>|<prescriber_bmdc_no>|<timestamp>`
+  Rules (Manifest V2):
+  1. Header: `v2|<rx_number>|<prescriber_bmdc_no>|<chamber_token>|<timestamp>`
   2. Timestamp is integer seconds since Unix epoch (DateTime.to_unix/2).
   3. Items are sorted strictly by `display_order ASC`, then `id ASC`.
   4. Active items only (archived_at is nil).
@@ -43,6 +47,7 @@ defmodule RxGenerator.Prescriptions.Manifest do
   def compile(%Prescription{} = prescription, items) when is_list(items) do
     rx_number = sanitize_delimiter(prescription.rx_number || "")
     bmdc_no = sanitize_delimiter(prescription.prescriber_bmdc_no || "A-00000")
+    chamber_token = compute_chamber_token(prescription)
 
     epoch_seconds =
       case prescription.finalized_at do
@@ -60,7 +65,11 @@ defmodule RxGenerator.Prescriptions.Manifest do
             "Cannot compile canonical manifest for prescription with zero active medications"
     else
       serialized_items = Enum.map(active_items, &serialize_item/1)
-      parts = [@version, rx_number, bmdc_no, to_string(epoch_seconds)] ++ serialized_items
+
+      parts =
+        [@version, rx_number, bmdc_no, chamber_token, to_string(epoch_seconds)] ++
+          serialized_items
+
       Enum.join(parts, "|")
     end
   end
@@ -71,6 +80,36 @@ defmodule RxGenerator.Prescriptions.Manifest do
   @spec compile(Prescription.t()) :: String.t()
   def compile(%Prescription{items: items} = prescription) when is_list(items) do
     compile(prescription, items)
+  end
+
+  @doc """
+  Computes a compact, URL-safe/canonical chamber token for the manifest header.
+  Prefers slugified chamber name (truncated to 16 chars) or an 8-char chamber UUID prefix.
+  Defaults to "general" if unassigned.
+  """
+  @spec compute_chamber_token(Prescription.t()) :: String.t()
+  def compute_chamber_token(%Prescription{} = prescription) do
+    name = prescription.chamber_name
+    id = prescription.chamber_config_id
+
+    cond do
+      is_binary(name) and String.trim(name) != "" ->
+        name
+        |> String.downcase()
+        |> String.replace(~r/[^a-z0-9]+/, "_")
+        |> String.trim("_")
+        |> String.slice(0, 16)
+        |> sanitize_delimiter()
+
+      is_binary(id) and String.trim(id) != "" ->
+        id
+        |> String.replace("-", "")
+        |> String.slice(0, 8)
+        |> sanitize_delimiter()
+
+      true ->
+        "general"
+    end
   end
 
   defp serialize_item(%PrescriptionItem{} = item) do

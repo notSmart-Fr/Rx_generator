@@ -53,7 +53,7 @@ defmodule RxGenerator.Prescriptions.CryptoTest do
       expected_epoch = DateTime.to_unix(finalized_at, :second)
 
       expected_manifest =
-        "v1|RX-20261014-9B2F|A-12345|#{expected_epoch}|a1b2c3d4:1+0+1:5d:pc|e5f6a7b8:0+0+1:14d:hs|deadbeef:1_0_1:5_days:p_c"
+        "v2|RX-20261014-9B2F|A-12345|general|#{expected_epoch}|a1b2c3d4:1+0+1:5d:pc|e5f6a7b8:0+0+1:14d:hs|deadbeef:1_0_1:5_days:p_c"
 
       assert manifest_string == expected_manifest
     end
@@ -81,7 +81,7 @@ defmodule RxGenerator.Prescriptions.CryptoTest do
       manifest = Manifest.compile(rx, [item_without_timing])
 
       # Must end with empty token : rather than :nil
-      assert manifest == "v1|RX-20261014-TEST|A-54321|#{epoch}|12345678:1+0+1:5d:"
+      assert manifest == "v2|RX-20261014-TEST|A-54321|general|#{epoch}|12345678:1+0+1:5d:"
       refute String.contains?(manifest, "nil")
     end
 

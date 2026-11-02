@@ -95,12 +95,12 @@
 **Independent Test**: Finalize a prescription with an active chamber and prescriber, extract the QR payload, assert total size < 450 bytes for 10 line items, verify against the doctor's public key in the local provider registry, and verify that tampering with chamber or doctor ID invalidates the signature.
 
 ### Tests for User Story 4 (Test-First Protocol)
-- [ ] T019 [P] [US4] Write Manifest V2 serialization, QR budgeting, and Ed25519 verification tests in `test/rx_generator/prescriptions/manifest_v2_signing_test.exs` (verify Red before implementation)
+- [X] T019 [P] [US4] Write Manifest V2 serialization, QR budgeting, and Ed25519 verification tests in `test/rx_generator/prescriptions/manifest_v2_signing_test.exs` (verify Red before implementation)
 
 ### Implementation for User Story 4
-- [ ] T020 [P] [US4] Implement Manifest V2 canonical schema (`v2|<rx_number>|<prescriber_bmdc_no>|<chamber_token>|<timestamp>|<items...>`) in `lib/rx_generator/prescriptions/manifest.ex` with delimiter sanitization and deterministic item sorting
-- [ ] T021 [US4] Update `lib/rx_generator/prescriptions/crypto.ex` to parse Manifest V2 payloads, resolve prescriber public keys, and verify signatures with chamber metadata
-- [ ] T022 [US4] Enhance `:lock` transition in `lib/rx_generator/prescriptions/prescription.ex` to freeze snapshots of active prescriber credentials and chamber header, compile Manifest V2, generate detached Ed25519 signature, and lock the prescription
+- [X] T020 [P] [US4] Implement Manifest V2 canonical schema (`v2|<rx_number>|<prescriber_bmdc_no>|<chamber_token>|<timestamp>|<items...>`) in `lib/rx_generator/prescriptions/manifest.ex` with delimiter sanitization and deterministic item sorting
+- [X] T021 [US4] Update `lib/rx_generator/prescriptions/crypto.ex` to parse Manifest V2 payloads, resolve prescriber public keys, and verify signatures with chamber metadata
+- [X] T022 [US4] Enhance `:lock` transition in `lib/rx_generator/prescriptions/prescription.ex` to freeze snapshots of active prescriber credentials and chamber header, compile Manifest V2, generate detached Ed25519 signature, and lock the prescription
 
 **Checkpoint**: Prescriptions cryptographically bind prescriber and chamber identities into tamper-evident QR codes.
 

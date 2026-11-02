@@ -94,7 +94,19 @@ defmodule RxGenerator.Prescriptions.Prescription do
 
     update :lock do
       require_atomic? false
-      accept [:canonical_manifest, :signature, :finalized_at]
+
+      accept [
+        :canonical_manifest,
+        :signature,
+        :finalized_at,
+        :prescriber_name,
+        :prescriber_qualifications,
+        :prescriber_bmdc_no,
+        :chamber_name,
+        :chamber_address,
+        :chamber_schedule,
+        :chamber_phone
+      ]
 
       validate fn changeset, _context ->
         items =

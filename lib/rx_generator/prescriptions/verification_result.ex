@@ -10,6 +10,7 @@ defmodule RxGenerator.Prescriptions.VerificationResult do
     :rx_number,
     :prescriber_bmdc_no,
     :prescriber_name,
+    :chamber_token,
     :timestamp,
     :items,
     :error_message
@@ -28,6 +29,7 @@ defmodule RxGenerator.Prescriptions.VerificationResult do
           rx_number: String.t() | nil,
           prescriber_bmdc_no: String.t() | nil,
           prescriber_name: String.t() | nil,
+          chamber_token: String.t() | nil,
           timestamp: integer() | nil,
           items: list() | nil,
           error_message: String.t() | nil

@@ -132,6 +132,76 @@ defmodule RxGenerator.Prescriptions.Crypto do
     case parse_qr_payload(payload) do
       {:ok, manifest, base64_signature} ->
         case String.split(manifest, "|") do
+          ["v2", rx_number, bmdc_no, chamber_token, timestamp_str | raw_items] ->
+            timestamp =
+              case Integer.parse(timestamp_str) do
+                {ts, ""} -> ts
+                _ -> nil
+              end
+
+            case ProviderRegistry.get_provider(bmdc_no) do
+              {:ok, %{public_key: pub_key, status: :active} = provider}
+              when is_binary(pub_key) ->
+                if verify_manifest(manifest, base64_signature, pub_key) do
+                  items = Enum.map(raw_items, &parse_manifest_item/1)
+
+                  {:ok,
+                   %VerificationResult{
+                     valid?: true,
+                     status: :valid,
+                     rx_number: rx_number,
+                     prescriber_bmdc_no: bmdc_no,
+                     prescriber_name: provider[:name],
+                     chamber_token: chamber_token,
+                     timestamp: timestamp,
+                     items: items,
+                     error_message: nil
+                   }}
+                else
+                  {:error,
+                   %VerificationResult{
+                     valid?: false,
+                     status: :signature_mismatch,
+                     rx_number: rx_number,
+                     prescriber_bmdc_no: bmdc_no,
+                     prescriber_name: provider[:name],
+                     chamber_token: chamber_token,
+                     timestamp: timestamp,
+                     items: nil,
+                     error_message: "Signature mismatch: tamper detected or altered payload"
+                   }}
+                end
+
+              {:ok, %{status: status} = provider} when status != :active ->
+                {:error,
+                 %VerificationResult{
+                   valid?: false,
+                   status: :license_inactive,
+                   rx_number: rx_number,
+                   prescriber_bmdc_no: bmdc_no,
+                   prescriber_name: provider[:name],
+                   chamber_token: chamber_token,
+                   timestamp: timestamp,
+                   items: nil,
+                   error_message: "Prescriber BM&DC license is #{status} and not authorized"
+                 }}
+
+              _ ->
+                {:error,
+                 %VerificationResult{
+                   valid?: false,
+                   status: :unknown_signer,
+                   rx_number: rx_number,
+                   prescriber_bmdc_no: bmdc_no,
+                   prescriber_name: nil,
+                   chamber_token: chamber_token,
+                   timestamp: timestamp,
+                   items: nil,
+                   error_message:
+                     "Unknown signer: BM&DC #{bmdc_no} not registered in local registry"
+                 }}
+            end
+
           ["v1", rx_number, bmdc_no, timestamp_str | raw_items] ->
             timestamp =
               case Integer.parse(timestamp_str) do
@@ -152,6 +222,7 @@ defmodule RxGenerator.Prescriptions.Crypto do
                      rx_number: rx_number,
                      prescriber_bmdc_no: bmdc_no,
                      prescriber_name: provider[:name],
+                     chamber_token: nil,
                      timestamp: timestamp,
                      items: items,
                      error_message: nil
@@ -164,6 +235,7 @@ defmodule RxGenerator.Prescriptions.Crypto do
                      rx_number: rx_number,
                      prescriber_bmdc_no: bmdc_no,
                      prescriber_name: provider[:name],
+                     chamber_token: nil,
                      timestamp: timestamp,
                      items: nil,
                      error_message: "Signature mismatch: tamper detected or altered payload"
@@ -178,6 +250,7 @@ defmodule RxGenerator.Prescriptions.Crypto do
                    rx_number: rx_number,
                    prescriber_bmdc_no: bmdc_no,
                    prescriber_name: provider[:name],
+                   chamber_token: nil,
                    timestamp: timestamp,
                    items: nil,
                    error_message: "Prescriber BM&DC license is #{status} and not authorized"
@@ -191,6 +264,7 @@ defmodule RxGenerator.Prescriptions.Crypto do
                    rx_number: rx_number,
                    prescriber_bmdc_no: bmdc_no,
                    prescriber_name: nil,
+                   chamber_token: nil,
                    timestamp: timestamp,
                    items: nil,
                    error_message:

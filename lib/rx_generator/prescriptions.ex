@@ -282,9 +282,34 @@ defmodule RxGenerator.Prescriptions do
   """
   def finalize_prescription(%Prescription{} = prescription, attrs \\ %{}) do
     prescription
-    |> Ash.load(:items)
+    |> Ash.load([:items, :prescriber, :chamber])
     |> case do
       {:ok, loaded_rx} ->
+        # Freeze prescriber and chamber snapshots if present
+        prescriber =
+          case loaded_rx.prescriber do
+            %PrescriberProfile{} = p -> p
+            _ ->
+              case get_active_prescriber() do
+                {:ok, p} -> p
+                _ -> nil
+              end
+          end
+
+        chamber =
+          case loaded_rx.chamber do
+            %ChamberConfig{} = c -> c
+            _ ->
+              if prescriber do
+                case list_chambers_for_prescriber(prescriber.id) do
+                  {:ok, [c | _]} -> c
+                  _ -> nil
+                end
+              else
+                nil
+              end
+          end
+
         # Determine finalized_at timestamp (preserving passed value if present)
         finalized_at =
           attrs[:finalized_at] || Map.get(attrs, "finalized_at") || DateTime.utc_now()
@@ -296,7 +321,18 @@ defmodule RxGenerator.Prescriptions do
           |> Ash.Changeset.for_update(:lock, attrs)
           |> Ash.update()
         else
-          rx_for_manifest = %{loaded_rx | finalized_at: finalized_at}
+          rx_for_manifest = %{
+            loaded_rx
+            | finalized_at: finalized_at,
+              prescriber_name: loaded_rx.prescriber_name || (prescriber && prescriber.name),
+              prescriber_bmdc_no: loaded_rx.prescriber_bmdc_no || (prescriber && prescriber.bmdc_no),
+              prescriber_qualifications: loaded_rx.prescriber_qualifications || (prescriber && prescriber.qualifications),
+              chamber_name: loaded_rx.chamber_name || (chamber && chamber.chamber_name),
+              chamber_address: loaded_rx.chamber_address || (chamber && chamber.address),
+              chamber_schedule: loaded_rx.chamber_schedule || (chamber && chamber.visiting_hours),
+              chamber_phone: loaded_rx.chamber_phone || (chamber && chamber.contact_phone)
+          }
+
           manifest_string = Manifest.compile(rx_for_manifest, active_items)
 
           # Retrieve signing key and sign manifest
@@ -307,6 +343,13 @@ defmodule RxGenerator.Prescriptions do
               |> Map.put(:canonical_manifest, manifest_string)
               |> Map.put(:signature, signature)
               |> Map.put(:finalized_at, finalized_at)
+              |> Map.put_new(:prescriber_name, rx_for_manifest.prescriber_name)
+              |> Map.put_new(:prescriber_bmdc_no, rx_for_manifest.prescriber_bmdc_no)
+              |> Map.put_new(:prescriber_qualifications, rx_for_manifest.prescriber_qualifications)
+              |> Map.put_new(:chamber_name, rx_for_manifest.chamber_name)
+              |> Map.put_new(:chamber_address, rx_for_manifest.chamber_address)
+              |> Map.put_new(:chamber_schedule, rx_for_manifest.chamber_schedule)
+              |> Map.put_new(:chamber_phone, rx_for_manifest.chamber_phone)
 
             loaded_rx
             |> Ash.Changeset.for_update(:lock, lock_params)

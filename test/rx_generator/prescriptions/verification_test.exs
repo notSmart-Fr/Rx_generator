@@ -12,14 +12,29 @@ defmodule RxGenerator.Prescriptions.VerificationTest do
 
   setup do
     {doc_pub, doc_priv} = CryptoFixtures.doctor_keypair()
-    bmdc_no = CryptoFixtures.doctor_bmdc_no()
-    doc_name = CryptoFixtures.doctor_name()
+    bmdc_no = "A-99901"
+    doc_name = "Dr. Test Verifier, MBBS"
 
     ProviderRegistry.register_provider(bmdc_no, %{
       name: doc_name,
       public_key: doc_pub,
       status: :active
     })
+
+    on_exit(fn ->
+      # Restore default provider
+      case Crypto.get_or_bootstrap_signing_key() do
+        {:ok, {pub, _priv}} ->
+          ProviderRegistry.register_provider(Crypto.default_bmdc_no(), %{
+            name: Crypto.default_doctor_name(),
+            public_key: pub,
+            status: :active
+          })
+
+        _ ->
+          :ok
+      end
+    end)
 
     # Non-zero microsecond timestamp to enforce strict epoch-second conversion
     finalized_at = ~U[2026-10-14 12:00:00.876543Z]
