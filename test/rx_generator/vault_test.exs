@@ -36,4 +36,3 @@ defmodule RxGenerator.VaultTest do
     end
   end
 end
-

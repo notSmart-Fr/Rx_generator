@@ -95,4 +95,3 @@ defmodule RxGenerator.Repo.Migrations.SetupPrescriberVaultChambers do
     drop table(:prescriber_profiles)
   end
 end
-

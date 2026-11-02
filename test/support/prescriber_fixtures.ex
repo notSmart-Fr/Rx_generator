@@ -108,4 +108,3 @@ defmodule RxGenerator.Support.PrescriberFixtures do
   """
   def default_doctor_name, do: @default_doctor_name
 end
-

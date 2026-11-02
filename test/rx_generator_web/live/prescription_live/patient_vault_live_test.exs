@@ -41,7 +41,8 @@ defmodule RxGeneratorWeb.PrescriptionLive.PatientVaultLiveTest do
       assert String.contains?(Base.decode64!(raw_name), "AES.GCM.V1")
     end
 
-    test "locks patient vault inputs and rejects update_patient_vault events after finalization", %{conn: conn} do
+    test "locks patient vault inputs and rejects update_patient_vault events after finalization",
+         %{conn: conn} do
       {:ok, view, _html} = live(conn, "/prescriptions/new")
 
       render_change(view, "update_patient_vault", %{

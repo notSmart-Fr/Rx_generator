@@ -288,7 +288,9 @@ defmodule RxGenerator.Prescriptions do
         # Freeze prescriber and chamber snapshots if present
         prescriber =
           case loaded_rx.prescriber do
-            %PrescriberProfile{} = p -> p
+            %PrescriberProfile{} = p ->
+              p
+
             _ ->
               case get_active_prescriber() do
                 {:ok, p} -> p
@@ -298,7 +300,9 @@ defmodule RxGenerator.Prescriptions do
 
         chamber =
           case loaded_rx.chamber do
-            %ChamberConfig{} = c -> c
+            %ChamberConfig{} = c ->
+              c
+
             _ ->
               if prescriber do
                 case list_chambers_for_prescriber(prescriber.id) do
@@ -325,8 +329,10 @@ defmodule RxGenerator.Prescriptions do
             loaded_rx
             | finalized_at: finalized_at,
               prescriber_name: loaded_rx.prescriber_name || (prescriber && prescriber.name),
-              prescriber_bmdc_no: loaded_rx.prescriber_bmdc_no || (prescriber && prescriber.bmdc_no),
-              prescriber_qualifications: loaded_rx.prescriber_qualifications || (prescriber && prescriber.qualifications),
+              prescriber_bmdc_no:
+                loaded_rx.prescriber_bmdc_no || (prescriber && prescriber.bmdc_no),
+              prescriber_qualifications:
+                loaded_rx.prescriber_qualifications || (prescriber && prescriber.qualifications),
               chamber_name: loaded_rx.chamber_name || (chamber && chamber.chamber_name),
               chamber_address: loaded_rx.chamber_address || (chamber && chamber.address),
               chamber_schedule: loaded_rx.chamber_schedule || (chamber && chamber.visiting_hours),
@@ -345,7 +351,10 @@ defmodule RxGenerator.Prescriptions do
               |> Map.put(:finalized_at, finalized_at)
               |> Map.put_new(:prescriber_name, rx_for_manifest.prescriber_name)
               |> Map.put_new(:prescriber_bmdc_no, rx_for_manifest.prescriber_bmdc_no)
-              |> Map.put_new(:prescriber_qualifications, rx_for_manifest.prescriber_qualifications)
+              |> Map.put_new(
+                :prescriber_qualifications,
+                rx_for_manifest.prescriber_qualifications
+              )
               |> Map.put_new(:chamber_name, rx_for_manifest.chamber_name)
               |> Map.put_new(:chamber_address, rx_for_manifest.chamber_address)
               |> Map.put_new(:chamber_schedule, rx_for_manifest.chamber_schedule)

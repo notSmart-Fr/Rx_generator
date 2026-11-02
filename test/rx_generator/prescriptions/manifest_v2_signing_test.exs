@@ -40,12 +40,12 @@ defmodule RxGenerator.Prescriptions.ManifestV2SigningTest do
       drug1 =
         Repo.all(DrugCatalogItem)
         |> Enum.find(&(&1.brand_name == "Napa")) ||
-        Repo.all(DrugCatalogItem) |> Enum.at(0)
+          Repo.all(DrugCatalogItem) |> Enum.at(0)
 
       drug2 =
         Repo.all(DrugCatalogItem)
         |> Enum.find(&(&1.brand_name == "Seclo")) ||
-        Repo.all(DrugCatalogItem) |> Enum.at(1)
+          Repo.all(DrugCatalogItem) |> Enum.at(1)
 
       {:ok, item1} =
         Prescriptions.add_item_to_draft(
@@ -146,7 +146,8 @@ defmodule RxGenerator.Prescriptions.ManifestV2SigningTest do
       assert is_binary(finalized_rx.canonical_manifest)
       assert is_binary(finalized_rx.signature)
 
-      qr_payload = Crypto.build_qr_payload(finalized_rx.canonical_manifest, finalized_rx.signature)
+      qr_payload =
+        Crypto.build_qr_payload(finalized_rx.canonical_manifest, finalized_rx.signature)
 
       # 203 DPI thermal optical scan threshold budget (< 450 bytes)
       payload_byte_size = byte_size(qr_payload)

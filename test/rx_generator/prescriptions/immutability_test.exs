@@ -74,8 +74,10 @@ defmodule RxGenerator.Prescriptions.ImmutabilityTest do
 
       # Assert cryptographic manifest & Ed25519 signature generation
       assert locked.canonical_manifest != nil
+
       assert String.starts_with?(locked.canonical_manifest, "v2|RX-TEST-001|A-12345|") or
                String.starts_with?(locked.canonical_manifest, "v1|RX-TEST-001|A-12345|")
+
       assert locked.signature != nil
       assert byte_size(Base.decode64!(locked.signature)) == 64
 

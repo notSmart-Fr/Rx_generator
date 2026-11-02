@@ -177,9 +177,10 @@ defmodule RxGenerator.Prescriptions.ChamberConfigTest do
       assert draft.chamber_phone == "01711223344"
     end
 
-    test "set_prescription_chamber/2 updates draft prescription chamber association and snapshots", %{
-      prescriber: prescriber
-    } do
+    test "set_prescription_chamber/2 updates draft prescription chamber association and snapshots",
+         %{
+           prescriber: prescriber
+         } do
       {:ok, chamber} =
         Prescriptions.create_chamber(%{
           prescriber_profile_id: prescriber.id,

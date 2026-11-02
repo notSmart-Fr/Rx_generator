@@ -127,9 +127,9 @@
 
 **Purpose**: Compliance audits, air-gapped performance verification, and code quality gates.
 
-- [ ] T026 [P] Add air-gap and performance SLA audit test in `test/rx_generator/prescriptions/prescriber_airgap_audit_test.exs` verifying zero external network calls and sub-15ms LiveView chamber switching latency
-- [ ] T027 Run quickstart validation scenarios from `specs/005-prescriber-identity-vaults/quickstart.md` across all test suites
-- [ ] T028 Run `mix precommit` ensuring zero compiler warnings, code formatting, and 100% passing test suites
+- [X] T026 [P] Add air-gap and performance SLA audit test in `test/rx_generator/prescriptions/prescriber_airgap_audit_test.exs` verifying zero external network calls and sub-15ms LiveView chamber switching latency
+- [X] T027 Run quickstart validation scenarios from `specs/005-prescriber-identity-vaults/quickstart.md` across all test suites
+- [X] T028 Run `mix precommit` ensuring zero compiler warnings, code formatting, and 100% passing test suites
 
 ---
 

@@ -8,16 +8,16 @@ defmodule RxGenerator.Prescriptions.Prescription do
     data_layer: AshSqlite.DataLayer,
     extensions: [AshCloak, AshStateMachine]
 
-  cloak do
-    vault RxGenerator.Vault
-    attributes [:patient_name, :patient_phone, :patient_age, :clinical_notes]
-    decrypt_by_default [:patient_name, :patient_phone, :patient_age, :clinical_notes]
-    encrypt_nil? false
-  end
-
   sqlite do
     table "prescriptions"
     repo RxGenerator.Repo
+  end
+
+  cloak do
+    vault(RxGenerator.Vault)
+    attributes([:patient_name, :patient_phone, :patient_age, :clinical_notes])
+    decrypt_by_default([:patient_name, :patient_phone, :patient_age, :clinical_notes])
+    encrypt_nil?(false)
   end
 
   state_machine do
@@ -65,7 +65,8 @@ defmodule RxGenerator.Prescriptions.Prescription do
 
       validate fn changeset, _context ->
         if changeset.data.state == :locked do
-          {:error, field: :state, message: "cannot update patient details on a locked prescription"}
+          {:error,
+           field: :state, message: "cannot update patient details on a locked prescription"}
         else
           :ok
         end

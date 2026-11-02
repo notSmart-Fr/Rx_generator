@@ -45,7 +45,7 @@ defmodule RxGeneratorWeb.PrescriptionLive.PrintLayoutTest do
     drug =
       Repo.all(DrugCatalogItem)
       |> Enum.find(&(&1.brand_name == "Napa")) ||
-      Repo.all(DrugCatalogItem) |> List.first()
+        Repo.all(DrugCatalogItem) |> List.first()
 
     %{prescriber: prescriber, chamber1: chamber1, chamber2: chamber2, drug: drug}
   end
@@ -60,7 +60,13 @@ defmodule RxGeneratorWeb.PrescriptionLive.PrintLayoutTest do
       # Physician details (Left column)
       assert has_element?(view, "#canvas-prescriber-name", "Dr. A. K. Azad")
       assert has_element?(view, "#canvas-prescriber-bmdc", "A-54321")
-      assert has_element?(view, "#canvas-prescriber-qualifications", "MBBS (DMC), FCPS (Medicine)")
+
+      assert has_element?(
+               view,
+               "#canvas-prescriber-qualifications",
+               "MBBS (DMC), FCPS (Medicine)"
+             )
+
       assert has_element?(view, "#canvas-prescriber-qualifications", "Cardiologist")
 
       # Chamber banner (Right column)
@@ -154,4 +160,3 @@ defmodule RxGeneratorWeb.PrescriptionLive.PrintLayoutTest do
     end
   end
 end
-

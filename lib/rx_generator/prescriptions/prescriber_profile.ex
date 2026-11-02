@@ -40,8 +40,7 @@ defmodule RxGenerator.Prescriptions.PrescriberProfile do
               :ok
             else
               {:error,
-               field: :bmdc_no,
-               message: "must match BM&DC registration format (e.g. A-12345)"}
+               field: :bmdc_no, message: "must match BM&DC registration format (e.g. A-12345)"}
             end
 
           _ ->
@@ -78,8 +77,7 @@ defmodule RxGenerator.Prescriptions.PrescriberProfile do
               :ok
             else
               {:error,
-               field: :bmdc_no,
-               message: "must match BM&DC registration format (e.g. A-12345)"}
+               field: :bmdc_no, message: "must match BM&DC registration format (e.g. A-12345)"}
             end
 
           _ ->
@@ -126,14 +124,14 @@ defmodule RxGenerator.Prescriptions.PrescriberProfile do
     update_timestamp :updated_at
   end
 
-  identities do
-    identity :unique_bmdc_no, [:bmdc_no]
-  end
-
   relationships do
     has_many :chambers, RxGenerator.Prescriptions.ChamberConfig do
       destination_attribute :prescriber_profile_id
       filter expr(active == true)
     end
+  end
+
+  identities do
+    identity :unique_bmdc_no, [:bmdc_no]
   end
 end

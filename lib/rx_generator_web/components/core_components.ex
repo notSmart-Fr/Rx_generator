@@ -938,8 +938,7 @@ defmodule RxGeneratorWeb.CoreComponents do
             </div>
           </div>
           <div class="text-right text-[10px] text-zinc-400">
-            High Court Generics Compliant<br />
-            RxGenerator Edge Engine
+            High Court Generics Compliant<br /> RxGenerator Edge Engine
           </div>
         </div>
       <% end %>

@@ -40,10 +40,11 @@ defmodule RxGeneratorWeb.PrescriptionLive.ChamberSwitcherTest do
       %{prescriber: prescriber, chamber1: chamber1, chamber2: chamber2}
     end
 
-    test "renders doctor credentials and default chamber banner with contract DOM IDs on mount", %{
-      conn: conn,
-      chamber1: chamber1
-    } do
+    test "renders doctor credentials and default chamber banner with contract DOM IDs on mount",
+         %{
+           conn: conn,
+           chamber1: chamber1
+         } do
       {:ok, view, _html} = live(conn, "/prescriptions/new")
 
       assert has_element?(view, "#canvas-prescriber-name", "Dr. Tariqul Islam")
