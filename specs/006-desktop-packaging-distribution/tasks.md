@@ -66,7 +66,7 @@
 **Independent Test**: Delete `%APPDATA%/RxGenerator`; launch application; verify directory is recreated, database contains full DGDA formulary catalog, and omnibar search returns results in <15ms without network access.
 
 ### Tests for User Story 2
-- [ ] T013 Write integration test in `test/rx_generator/release_bootstrap_test.exs` verifying:
+- [x] T013 Write integration test in `test/rx_generator/release_bootstrap_test.exs` verifying:
   - Resolution of user data directory based on host OS.
   - Automatic creation of target directory if absent.
   - Atomical copy of template seed SQLite database.
@@ -74,9 +74,9 @@
   - Idempotent execution of Ecto/Ash migrations without modifying existing user prescriber/patient vault data.
 
 ### Implementation for User Story 2
-- [ ] T014 Implement release bootstrapper in `lib/rx_generator/release.ex` with `ensure_user_data_dir/0`, `ensure_database_file/1`, `ensure_secrets/1`, and `run_migrations/0`.
-- [ ] T015 Generate production seed database snapshot in `priv/repo/seeds/rx_generator_seed.db` containing the pre-indexed DGDA drug catalog.
-- [ ] T016 Update `config/runtime.exs` and `rel/env.bat.eex` to invoke `RxGenerator.Release.bootstrap/0` prior to starting endpoint.
+- [x] T014 Implement release bootstrapper in `lib/rx_generator/release.ex` with `ensure_user_data_dir/0`, `ensure_database_file/1`, `ensure_secrets/1`, and `run_migrations/0`.
+- [x] T015 Generate production seed database snapshot in `priv/repo/seeds/rx_generator_seed.db` containing the pre-indexed DGDA drug catalog.
+- [x] T016 Update `config/runtime.exs` and `rel/env.bat.eex` to invoke `RxGenerator.Release.bootstrap/0` prior to starting endpoint.
 
 **Checkpoint**: User Story 2 is functional. Pre-seeded database and local vector indices are automatically provisioned in user profile on initial launch.
 

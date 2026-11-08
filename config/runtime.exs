@@ -51,6 +51,23 @@ if config_env() == :dev do
 end
 
 if config_env() == :prod do
+  # In release / desktop mode, automatically resolve data directory, database, and secrets if unset
+  if System.get_env("RELEASE_NAME") != nil and
+       (System.get_env("DATABASE_PATH") == nil or System.get_env("SECRET_KEY_BASE") == nil) do
+    data_dir = RxGenerator.Release.resolve_user_data_dir()
+    RxGenerator.Release.ensure_user_data_dir(data_dir)
+
+    template_db = Path.expand("../priv/repo/seeds/rx_generator_seed.db", __DIR__)
+    working_db = Path.join(data_dir, "rx_generator.db")
+    RxGenerator.Release.ensure_database_file(working_db, template_db)
+
+    secrets = RxGenerator.Release.ensure_secrets(data_dir)
+
+    System.put_env("DATABASE_PATH", working_db)
+    System.put_env("SECRET_KEY_BASE", secrets.secret_key_base)
+    System.put_env("CLOAK_KEY", secrets.cloak_key)
+  end
+
   database_path =
     System.get_env("DATABASE_PATH") ||
       raise """
