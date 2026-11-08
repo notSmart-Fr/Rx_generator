@@ -18,7 +18,8 @@ defmodule RxGenerator.Application do
       RxGenerator.Prescriptions.ProviderRegistry,
       {RxGenerator.Formulary.NeuralWorker, []},
       # Start to serve requests, typically the last entry
-      RxGeneratorWeb.Endpoint
+      RxGeneratorWeb.Endpoint,
+      RxGeneratorWeb.Listeners.PortNotifier
     ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html

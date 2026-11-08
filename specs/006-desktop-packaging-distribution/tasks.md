@@ -18,10 +18,10 @@
 
 **Purpose**: Configure Mix release packaging, runtime overlays, and build scripts.
 
-- [ ] T001 Configure Mix release `:rx_generator` in `mix.exs` with `include_erts: true`, stripped binaries, and overlay paths.
-- [ ] T002 Create Windows release environment script in `rel/env.bat.eex` setting production defaults (`PHX_SERVER=true`).
-- [ ] T003 [P] Create Unix release environment script in `rel/env.sh.eex` setting production defaults (`PHX_SERVER=true`).
-- [ ] T004 Create release packaging helper script in `scripts/build_desktop.ps1` to automate `mix assets.deploy`, `mix release`, and runner compilation.
+- [x] T001 Configure Mix release `:rx_generator` in `mix.exs` with `include_erts: true`, stripped binaries, and overlay paths.
+- [x] T002 Create Windows release environment script in `rel/env.bat.eex` setting production defaults (`PHX_SERVER=true`).
+- [x] T003 [P] Create Unix release environment script in `rel/env.sh.eex` setting production defaults (`PHX_SERVER=true`).
+- [x] T004 Create release packaging helper script in `scripts/build_desktop.ps1` to automate `mix assets.deploy`, `mix release`, and runner compilation.
 
 ---
 
@@ -29,10 +29,10 @@
 
 **Purpose**: Dynamic port binding, loopback restriction, and IPC signaling needed by all desktop wrappers.
 
-- [ ] T005 Write unit test in `test/rx_generator_web/endpoint_port_test.exs` verifying dynamic loopback port allocation on `127.0.0.1`.
-- [ ] T006 Update `lib/rx_generator_web/endpoint.ex` and `config/runtime.exs` to support dynamic ephemeral loopback port (`127.0.0.1:0` or open port scan starting at 4000).
-- [ ] T007 Implement IPC port notifier in `lib/rx_generator_web/listeners/port_notifier.ex` that emits `[RX_PORT:<port>]` to stdout upon server socket binding.
-- [ ] T008 Add `RxGeneratorWeb.Listeners.PortNotifier` into application supervision tree in `lib/rx_generator/application.ex`.
+- [x] T005 Write unit test in `test/rx_generator_web/endpoint_port_test.exs` verifying dynamic loopback port allocation on `127.0.0.1`.
+- [x] T006 Update `lib/rx_generator_web/endpoint.ex` and `config/runtime.exs` to support dynamic ephemeral loopback port (`127.0.0.1:0` or open port scan starting at 4000).
+- [x] T007 Implement IPC port notifier in `lib/rx_generator_web/listeners/port_notifier.ex` that emits `[RX_PORT:<port>]` to stdout upon server socket binding.
+- [x] T008 Add `RxGeneratorWeb.Listeners.PortNotifier` into application supervision tree in `lib/rx_generator/application.ex`.
 
 ---
 
@@ -43,17 +43,17 @@
 **Independent Test**: Launch the native runner executable on a target machine without Elixir/Node/Erlang installed; verify native window opens to RxGenerator interface within 3.5 seconds; close window and assert zero orphaned BEAM processes in Task Manager.
 
 ### Tests for User Story 1
-- [ ] T009 Write supervisor runner lifecycle test in `test/rx_generator/desktop_runner_test.exs` testing stdout parsing of `[RX_PORT:<port>]` and child process termination signaling.
+- [x] T009 Write supervisor runner lifecycle test in `test/rx_generator/desktop_runner_test.exs` testing stdout parsing of `[RX_PORT:<port>]` and child process termination signaling.
 
 ### Implementation for User Story 1
-- [ ] T010 Implement native Windows WebView2 runner in `native_runner/windows/RxGeneratorApp.cs` with:
+- [x] T010 Implement native Windows WebView2 runner in `native_runner/windows/RxGeneratorApp.cs` with:
   - Single instance check via named Mutex `Global\RxGenerator_SingleInstance_App_Mutex`.
   - Windows Job Object configuration with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` to ensure child process tree auto-kill on parent exit.
   - Spawning `bin\rx_generator.bat start` with redirected stdout/stderr.
   - Regex parser awaiting `\[RX_PORT:(\d+)\]`.
   - WebView2 control initialization navigating to `http://127.0.0.1:<port>`.
-- [ ] T011 Create runner compilation script `native_runner/windows/build_runner.ps1` utilizing standard `.NET Framework` `csc.exe`.
-- [ ] T012 [P] Implement native Linux runner script in `native_runner/linux/rx_generator_runner.sh` with WebKitGTK / shell wrapper and PID trap cleanup.
+- [x] T011 Create runner compilation script `native_runner/windows/build_runner.ps1` utilizing standard `.NET Framework` `csc.exe`.
+- [x] T012 [P] Implement native Linux runner script in `native_runner/linux/rx_generator_runner.sh` with WebKitGTK / shell wrapper and PID trap cleanup.
 
 **Checkpoint**: User Story 1 is functional. The desktop application boots natively without runtime dependencies and terminates cleanly.
 

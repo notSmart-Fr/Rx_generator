@@ -20,8 +20,18 @@ if System.get_env("PHX_SERVER") do
   config :rx_generator, RxGeneratorWeb.Endpoint, server: true
 end
 
+port =
+  case System.get_env("PORT") do
+    nil -> 4000
+    "" -> 4000
+    val -> String.to_integer(val)
+  end
+
 config :rx_generator, RxGeneratorWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+  http: [
+    ip: {127, 0, 0, 1},
+    port: port
+  ]
 
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
@@ -68,14 +78,18 @@ if config_env() == :prod do
 
   config :rx_generator, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  prod_port =
+    case System.get_env("PORT") do
+      nil -> 0
+      "" -> 0
+      val -> String.to_integer(val)
+    end
+
   config :rx_generator, RxGeneratorWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
-      # Enable IPv6 and bind on all interfaces.
-      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
-      # See the documentation on https://bandit.hexdocs.pm/Bandit.html#t:options/0
-      # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0}
+      ip: {127, 0, 0, 1},
+      port: prod_port
     ],
     secret_key_base: secret_key_base
 
