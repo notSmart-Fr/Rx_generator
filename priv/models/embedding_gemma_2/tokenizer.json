@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "truncation": {
+    "max_length": 512
+  },
+  "padding": null,
+  "model": {
+    "type": "Unigram",
+    "unk_id": 0,
+    "vocab": [
+      ["<unk>", 0.0],
+      ["<s>", 0.0],
+      ["</s>", 0.0]
+    ]
+  }
+}

@@ -662,7 +662,10 @@ defmodule RxGeneratorWeb.CoreComponents do
     >
       <!-- Prescriber & Chamber Header Banner -->
       <div class="border-b-2 border-zinc-900 pb-5 mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div
+          id="prescription-header-banner"
+          class="print-two-col-header flex flex-col sm:flex-row justify-between items-start gap-4"
+        >
           <!-- Doctor Credentials (Left) -->
           <div class="space-y-1">
             <h1 id="canvas-prescriber-name" class="text-2xl font-black text-zinc-900 tracking-tight">
@@ -920,9 +923,15 @@ defmodule RxGeneratorWeb.CoreComponents do
 
       <!-- Verification Seal Footer (Visible in Locked Print & Screen) -->
       <%= if @state == :locked && @qr_svg do %>
-        <div class="mt-8 pt-6 border-t border-zinc-200 hidden print:flex items-center justify-between">
+        <div
+          id="print-verification-seal"
+          class="mt-8 pt-6 border-t border-zinc-200 hidden print:flex items-center justify-between"
+        >
           <div class="flex items-center gap-4">
-            <div class="w-20 h-20 p-1 bg-white border border-zinc-300 rounded-lg flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full">
+            <div
+              id="print-qr-seal-container"
+              class="qr-seal-print w-20 h-20 p-1 bg-white border border-zinc-300 rounded-lg flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full"
+            >
               {Phoenix.HTML.raw(@qr_svg)}
             </div>
             <div class="space-y-0.5">

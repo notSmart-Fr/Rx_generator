@@ -3,7 +3,10 @@ defmodule RxGenerator.ReleaseBootstrapTest do
 
   alias RxGenerator.Release
 
-  @tmp_dir Path.join(System.tmp_dir!(), "rx_generator_test_data_#{:erlang.unique_integer([:positive])}")
+  @tmp_dir Path.join(
+             System.tmp_dir!(),
+             "rx_generator_test_data_#{:erlang.unique_integer([:positive])}"
+           )
 
   setup do
     File.rm_rf!(@tmp_dir)
@@ -54,6 +57,18 @@ defmodule RxGenerator.ReleaseBootstrapTest do
 
   test "verifies full bootstrap lifecycle provisions actual seed database and runs migrations" do
     # Point user data directory to a clean temp sandbox
+    prev_appdata = System.get_env("APPDATA")
+
+    on_exit(fn ->
+      if prev_appdata,
+        do: System.put_env("APPDATA", prev_appdata),
+        else: System.delete_env("APPDATA")
+
+      System.delete_env("DATABASE_PATH")
+      System.delete_env("SECRET_KEY_BASE")
+      System.delete_env("CLOAK_KEY")
+    end)
+
     sandbox_user_dir = Path.join(@tmp_dir, "appdata")
     System.put_env("APPDATA", sandbox_user_dir)
 
@@ -95,7 +110,43 @@ defmodule RxGenerator.ReleaseBootstrapTest do
     {:row, [migration_count]} = Exqlite.Sqlite3.step(conn, m_stmt)
     assert migration_count > 0
 
+    # T024: Verify pre-indexed FTS5 trigram and 256-dim vector tables are populated
+    {:ok, fts_stmt} = Exqlite.Sqlite3.prepare(conn, "SELECT count(*) FROM drug_catalog_fts;")
+    {:row, [fts_count]} = Exqlite.Sqlite3.step(conn, fts_stmt)
+    assert fts_count >= 10, "Expected >= 10 FTS5 rows in bootstrapped DB, got #{fts_count}"
+
+    {:ok, vec_stmt} = Exqlite.Sqlite3.prepare(conn, "SELECT count(*) FROM drug_catalog_vectors;")
+    {:row, [vec_count]} = Exqlite.Sqlite3.step(conn, vec_stmt)
+    assert vec_count >= 10, "Expected >= 10 vector rows in bootstrapped DB, got #{vec_count}"
+
     Exqlite.Sqlite3.close(conn)
+
+    System.delete_env("APPDATA")
+    System.delete_env("DATABASE_PATH")
+    System.delete_env("SECRET_KEY_BASE")
+    System.delete_env("CLOAK_KEY")
+  end
+
+  test "T025: RxGenerator.Vault resolves persistent CLOAK_KEY from secrets.env" do
+    Release.ensure_user_data_dir(@tmp_dir)
+    secrets = Release.ensure_secrets(@tmp_dir)
+
+    prev_cloak = System.get_env("CLOAK_KEY")
+
+    on_exit(fn ->
+      if prev_cloak,
+        do: System.put_env("CLOAK_KEY", prev_cloak),
+        else: System.delete_env("CLOAK_KEY")
+    end)
+
+    System.put_env("CLOAK_KEY", secrets.cloak_key)
+
+    resolved_key = RxGenerator.Vault.resolve_vault_key([])
+    expected_key = Base.decode64!(secrets.cloak_key)
+    fallback_key = :crypto.hash(:sha256, "rx_generator_edge_vault_master_key_2026")
+
+    assert byte_size(resolved_key) == 32
+    assert resolved_key == expected_key
+    assert resolved_key != fallback_key
   end
 end
-

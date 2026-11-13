@@ -7,4 +7,3 @@ defmodule RxGeneratorWeb.Listeners.PortNotifierTest do
     assert PortNotifier.format_ipc_message(41234) == "[RX_PORT:41234]"
   end
 end
-

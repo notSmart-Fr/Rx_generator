@@ -65,4 +65,3 @@ defmodule RxGeneratorWeb.Listeners.PortNotifier do
     Logger.info("[PortNotifier] Application listening on loopback port #{port}")
   end
 end
-

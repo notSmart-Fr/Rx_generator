@@ -1,13 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace RxGeneratorDesktop
 {
+    [ComVisible(true)]
     public class RxGeneratorAppForm : Form
     {
         private WebBrowser _webBrowser;
@@ -15,17 +20,21 @@ namespace RxGeneratorDesktop
         private IntPtr _jobHandle = IntPtr.Zero;
         private int _allocatedPort = 0;
         private bool _isShuttingDown = false;
+        private List<string> _recentLogs;
 
-        public RxGeneratorAppForm(int port, Process beamProcess, IntPtr jobHandle)
+        public RxGeneratorAppForm(int port, Process beamProcess, IntPtr jobHandle, List<string> recentLogs)
         {
             _allocatedPort = port;
             _beamProcess = beamProcess;
             _jobHandle = jobHandle;
+            _recentLogs = recentLogs ?? new List<string>();
 
             this.Text = "RxGenerator - Edge Clinical Prescription Engine";
             this.Width = 1280;
             this.Height = 840;
             this.StartPosition = FormStartPosition.CenterScreen;
+
+            ConfigureNativePrintSettings();
 
             // Initialize browser control
             _webBrowser = new WebBrowser();
@@ -33,7 +42,14 @@ namespace RxGeneratorDesktop
             _webBrowser.IsWebBrowserContextMenuEnabled = false;
             _webBrowser.WebBrowserShortcutsEnabled = true;
             _webBrowser.ScriptErrorsSuppressed = true;
+            _webBrowser.ObjectForScripting = this;
             this.Controls.Add(_webBrowser);
+
+            if (_beamProcess != null)
+            {
+                _beamProcess.EnableRaisingEvents = true;
+                _beamProcess.Exited += BeamProcess_Exited;
+            }
 
             this.FormClosing += RxGeneratorAppForm_FormClosing;
             this.Load += RxGeneratorAppForm_Load;
@@ -43,6 +59,132 @@ namespace RxGeneratorDesktop
         {
             string url = string.Format("http://127.0.0.1:{0}/", _allocatedPort);
             _webBrowser.Navigate(url);
+        }
+
+        private void BeamProcess_Exited(object sender, EventArgs e)
+        {
+            if (_isShuttingDown) return;
+
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                this.BeginInvoke(new Action(HandleUnexpectedBeamExit));
+            }
+        }
+
+        private void HandleUnexpectedBeamExit()
+        {
+            if (_isShuttingDown) return;
+            _isShuttingDown = true;
+
+            string msg = FormatDiagnosticMessage(
+                "The RxGenerator background runtime exited unexpectedly.",
+                _recentLogs
+            );
+            MessageBox.Show(msg, "RxGenerator - Runtime Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            this.Close();
+        }
+
+        public static void RecordOutputLine(List<string> buffer, string line)
+        {
+            if (buffer == null || line == null) return;
+
+            lock (buffer)
+            {
+                if (buffer.Count >= 20)
+                {
+                    buffer.RemoveAt(0);
+                }
+                buffer.Add(line);
+            }
+        }
+
+        public static string FormatDiagnosticMessage(string header, IEnumerable<string> lines)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(header);
+            sb.AppendLine();
+            sb.AppendLine("Recent runtime output:");
+
+            bool hasLines = false;
+            if (lines != null)
+            {
+                lock (lines)
+                {
+                    foreach (string line in lines)
+                    {
+                        hasLines = true;
+                        sb.AppendLine(line);
+                    }
+                }
+            }
+
+            if (!hasLines)
+            {
+                sb.AppendLine("(no output captured)");
+            }
+
+            return sb.ToString();
+        }
+
+        public static void ConfigureNativePrintSettings()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Internet Explorer\PageSetup"))
+                {
+                    if (key != null)
+                    {
+                        key.SetValue("header", "");
+                        key.SetValue("footer", "");
+                        key.SetValue("margin_top", "0.39375");
+                        key.SetValue("margin_bottom", "0.39375");
+                        key.SetValue("margin_left", "0.39375");
+                        key.SetValue("margin_right", "0.39375");
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public void ShowPrintUI()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(ShowPrintUI));
+                return;
+            }
+
+            try
+            {
+                PropertyInfo coreWebView2Prop = _webBrowser.GetType().GetProperty("CoreWebView2");
+                if (coreWebView2Prop != null)
+                {
+                    object coreWebView2 = coreWebView2Prop.GetValue(_webBrowser, null);
+                    if (coreWebView2 != null)
+                    {
+                        MethodInfo showPrintMethod = coreWebView2.GetType().GetMethod("ShowPrintUI", Type.EmptyTypes);
+                        if (showPrintMethod != null)
+                        {
+                            showPrintMethod.Invoke(coreWebView2, null);
+                            return;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            _webBrowser.ShowPrintDialog();
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.P))
+            {
+                ShowPrintUI();
+                return true;
+            }
+
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         private void RxGeneratorAppForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -185,56 +327,93 @@ namespace RxGeneratorDesktop
 
                 int boundPort = 0;
                 Process beamProcess = null;
+                List<string> recentLogs = new List<string>();
 
-                if (File.Exists(relBat))
+                if (!File.Exists(relBat))
                 {
-                    ProcessStartInfo psi = new ProcessStartInfo();
-                    psi.FileName = "cmd.exe";
-                    psi.Arguments = string.Format("/c \"\"{0}\" start\"", relBat);
-                    psi.UseShellExecute = false;
-                    psi.RedirectStandardOutput = true;
-                    psi.RedirectStandardError = true;
-                    psi.CreateNoWindow = true;
+                    MessageBox.Show(
+                        "RxGenerator release executable (rx_generator.bat) could not be located.",
+                        "RxGenerator - Startup Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    if (jobHandle != IntPtr.Zero) CloseHandle(jobHandle);
+                    return;
+                }
 
-                    beamProcess = new Process();
-                    beamProcess.StartInfo = psi;
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = "cmd.exe";
+                psi.Arguments = string.Format("/c \"\"{0}\" start\"", relBat);
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                psi.CreateNoWindow = true;
 
-                    ManualResetEvent portFoundEvent = new ManualResetEvent(false);
+                beamProcess = new Process();
+                beamProcess.StartInfo = psi;
+                beamProcess.EnableRaisingEvents = true;
 
-                    beamProcess.OutputDataReceived += (s, e) =>
+                ManualResetEvent portFoundEvent = new ManualResetEvent(false);
+
+                beamProcess.OutputDataReceived += (s, e) =>
+                {
+                    if (e.Data != null)
                     {
-                        if (e.Data != null)
+                        RecordOutputLine(recentLogs, e.Data);
+                        Match m = Regex.Match(e.Data, @"\[RX_PORT:(\d+)\]");
+                        if (m.Success)
                         {
-                            Match m = Regex.Match(e.Data, @"\[RX_PORT:(\d+)\]");
-                            if (m.Success)
-                            {
-                                boundPort = int.Parse(m.Groups[1].Value);
-                                portFoundEvent.Set();
-                            }
+                            boundPort = int.Parse(m.Groups[1].Value);
+                            portFoundEvent.Set();
                         }
-                    };
-
-                    beamProcess.Start();
-                    if (jobHandle != IntPtr.Zero)
-                    {
-                        AssignProcessToJobObject(jobHandle, beamProcess.Handle);
                     }
+                };
 
-                    beamProcess.BeginOutputReadLine();
-                    beamProcess.BeginErrorReadLine();
-
-                    // Wait up to 10 seconds for dynamic port signal
-                    portFoundEvent.WaitOne(10000);
-                }
-
-                if (boundPort == 0)
+                beamProcess.ErrorDataReceived += (s, e) =>
                 {
-                    boundPort = 4000; // default fallback port
+                    if (e.Data != null)
+                    {
+                        RecordOutputLine(recentLogs, "[stderr] " + e.Data);
+                    }
+                };
+
+                beamProcess.Start();
+                if (jobHandle != IntPtr.Zero)
+                {
+                    AssignProcessToJobObject(jobHandle, beamProcess.Handle);
                 }
 
-                Application.Run(new RxGeneratorAppForm(boundPort, beamProcess, jobHandle));
+                beamProcess.BeginOutputReadLine();
+                beamProcess.BeginErrorReadLine();
+
+                // Wait up to 10 seconds for dynamic port signal
+                bool portSignaled = portFoundEvent.WaitOne(10000);
+
+                if (!portSignaled || (beamProcess.HasExited && boundPort == 0))
+                {
+                    string errMsg = FormatDiagnosticMessage(
+                        "RxGenerator failed to start within 10 seconds.",
+                        recentLogs
+                    );
+                    MessageBox.Show(
+                        errMsg,
+                        "RxGenerator - Startup Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+
+                    try
+                    {
+                        if (!beamProcess.HasExited) beamProcess.Kill();
+                    }
+                    catch { }
+
+                    if (jobHandle != IntPtr.Zero) CloseHandle(jobHandle);
+                    return;
+                }
+
+                Application.Run(new RxGeneratorAppForm(boundPort, beamProcess, jobHandle, recentLogs));
             }
         }
     }
 }
-

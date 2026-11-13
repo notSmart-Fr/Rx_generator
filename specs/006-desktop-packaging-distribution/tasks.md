@@ -89,14 +89,14 @@
 **Independent Test**: Trigger prescription print in the native desktop window; verify the OS print dialog opens and prints with two-column chamber headers, bold uppercase generic molecule names, and crisp 2D Ed25519 QR barcodes.
 
 ### Tests for User Story 3
-- [ ] T017 Write LiveView print trigger test in `test/rx_generator_web/live/desktop_print_test.exs` verifying `phx-click="print"` dispatches `window.print()` event with clean `@media print` CSS classes.
+- [x] T017 Write LiveView print trigger test in `test/rx_generator_web/live/desktop_print_test.exs` verifying `phx-click="print"` dispatches `window.print()` event with clean `@media print` CSS classes.
 
 ### Implementation for User Story 3
-- [ ] T018 Refine `@media print` rules in `assets/css/app.css` to enforce:
+- [x] T018 Refine `@media print` rules in `assets/css/app.css` to enforce:
   - `@page { margin: 10mm; size: auto; }`
   - Suppression of browser headers and footers (`display: none` on URL / timestamp chrome).
   - Explicit contrast and sizing for the 2D QR code barcode SVG container.
-- [ ] T019 Configure WebView2 settings in `native_runner/windows/RxGeneratorApp.cs` enabling native print dialog support (`CoreWebView2.ShowPrintUI` or native print interception).
+- [x] T019 Configure WebView2 settings in `native_runner/windows/RxGeneratorApp.cs` enabling native print dialog support (`CoreWebView2.ShowPrintUI` or native print interception).
 
 **Checkpoint**: User Story 3 is functional. Prescriptions print cleanly via the native OS print spooler.
 
@@ -106,10 +106,10 @@
 
 **Purpose**: RAM ceilings validation, air-gap audit, and end-to-end distribution packaging.
 
-- [ ] T020 Write end-to-end packaging verification test in `test/rx_generator/desktop_packaging_test.exs` asserting release files, erts binaries, and seed database exist in build output.
-- [ ] T021 Measure and verify combined RAM usage of BEAM node + WebView2 runner remains under 250MB during active prescription generation.
-- [ ] T022 Validate full air-gap execution by running complete test suite with simulated zero network access.
-- [ ] T023 Run `mix precommit` and verify zero compiler warnings and 100% test pass.
+- [x] T020 Write end-to-end packaging verification test in `test/rx_generator/desktop_packaging_test.exs` asserting release files, erts binaries, and seed database exist in build output.
+- [x] T021 Measure and verify combined RAM usage of BEAM node + WebView2 runner remains under 250MB during active prescription generation.
+- [x] T022 Validate full air-gap execution by running complete test suite with simulated zero network access.
+- [x] T023 Run `mix precommit` and verify zero compiler warnings and 100% test pass.
 
 ---
 
@@ -130,3 +130,13 @@ flowchart TD
 - `T010` (Windows C# runner) and `T012` (Linux runner script) can run in parallel.
 - `T017` (Print LiveView test) and `T018` (CSS print rules) can run in parallel.
 
+
+---
+
+## Phase 7: Convergence
+
+- [x] T024 Populate `drug_catalog_fts` trigram index and `drug_catalog_vectors` 256-dim embeddings in `lib/rx_generator/release.ex` and regenerate `priv/repo/seeds/rx_generator_seed.db` so first-boot FTS5 and vector searches return seeded DGDA records immediately per US2/AC1, FR-004, T015, Constitution VII (partial)
+- [x] T025 Wire persistent machine `CLOAK_KEY` from `secrets.env` into `RxGenerator.Vault` runtime configuration in `lib/rx_generator/vault.ex` and `config/runtime.exs` and verify with a test in `test/rx_generator/release_bootstrap_test.exs` per FR-010, Constitution VIII (partial)
+- [x] T026 Add stderr/stdout ring-buffer capture and diagnostic `MessageBox` dialog on BEAM subprocess startup timeout or unexpected crash in `native_runner/windows/RxGeneratorApp.cs` and verify in `test/rx_generator/desktop_runner_test.exs` per FR-006, plan: desktop-ipc-contract (partial)
+- [x] T027 Bundle local vector model artifact directory `priv/models/embedding_gemma_2` in the release and resolve `Application.app_dir(:rx_generator, "priv/models/embedding_gemma_2")` in `config/runtime.exs` and `lib/rx_generator/formulary/neural_worker.ex` per FR-005, Constitution VII (missing)
+- [x] T028 Update `native_runner/linux/rx_generator_runner.sh` to enforce single-instance lockfile (`/tmp/rx_generator.lock`) and parse `[RX_PORT:<port>]` from child stdout stream, verifying in `test/rx_generator/desktop_runner_test.exs` per FR-002, FR-007, T012 (partial)

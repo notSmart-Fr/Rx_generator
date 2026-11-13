@@ -57,7 +57,13 @@ if config_env() == :prod do
     data_dir = RxGenerator.Release.resolve_user_data_dir()
     RxGenerator.Release.ensure_user_data_dir(data_dir)
 
-    template_db = Path.expand("../priv/repo/seeds/rx_generator_seed.db", __DIR__)
+    template_db =
+      if Code.ensure_loaded?(RxGenerator.Release) do
+        RxGenerator.Release.resolve_template_db_path()
+      else
+        Path.expand("../priv/repo/seeds/rx_generator_seed.db", __DIR__)
+      end
+
     working_db = Path.join(data_dir, "rx_generator.db")
     RxGenerator.Release.ensure_database_file(working_db, template_db)
 
@@ -68,12 +74,18 @@ if config_env() == :prod do
     System.put_env("CLOAK_KEY", secrets.cloak_key)
   end
 
+  build_time? = System.get_env("RELEASE_NAME") == nil
+
   database_path =
     System.get_env("DATABASE_PATH") ||
-      raise """
-      environment variable DATABASE_PATH is missing.
-      For example: /etc/rx_generator/rx_generator.db
-      """
+      if(build_time?,
+        do: Path.expand("../priv/repo/seeds/rx_generator_seed.db", __DIR__),
+        else:
+          raise("""
+          environment variable DATABASE_PATH is missing.
+          For example: /etc/rx_generator/rx_generator.db
+          """)
+      )
 
   config :rx_generator, RxGenerator.Repo,
     database: database_path,
@@ -86,10 +98,14 @@ if config_env() == :prod do
   # variable instead.
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
-      raise """
-      environment variable SECRET_KEY_BASE is missing.
-      You can generate one by calling: mix phx.gen.secret
-      """
+      if(build_time?,
+        do: String.duplicate("rx_generator_build_time_placeholder_key_", 2),
+        else:
+          raise("""
+          environment variable SECRET_KEY_BASE is missing.
+          You can generate one by calling: mix phx.gen.secret
+          """)
+      )
 
   host = System.get_env("PHX_HOST") || "example.com"
 
@@ -109,6 +125,32 @@ if config_env() == :prod do
       port: prod_port
     ],
     secret_key_base: secret_key_base
+
+  if cloak_env = System.get_env("CLOAK_KEY") do
+    cloak_key =
+      case Base.decode64(cloak_env) do
+        {:ok, decoded} when byte_size(decoded) == 32 -> decoded
+        _ when byte_size(cloak_env) == 32 -> cloak_env
+        _ -> nil
+      end
+
+    if cloak_key do
+      config :rx_generator, RxGenerator.Vault,
+        json_library: Jason,
+        ciphers: [
+          default: {
+            Cloak.Ciphers.AES.GCM,
+            tag: "AES.GCM.V1", key: cloak_key, iv_length: 12
+          }
+        ]
+    end
+  end
+
+  if System.get_env("RELEASE_NAME") != nil do
+    config :rx_generator, RxGenerator.Formulary.NeuralWorker,
+      model_path: Application.app_dir(:rx_generator, "priv/models/embedding_gemma_2"),
+      dimension: 256
+  end
 
   # ## SSL Support
   #

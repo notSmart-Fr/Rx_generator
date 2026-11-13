@@ -43,6 +43,7 @@ defmodule RxGenerator.Release do
         fallback
       else
         priv = :code.priv_dir(@app)
+
         if is_list(priv) or is_binary(priv) do
           Path.join(priv, "repo/seeds/rx_generator_seed.db")
         else
@@ -92,6 +93,7 @@ defmodule RxGenerator.Release do
       else
         # Seed from dgda_sample.csv if template db isn't pre-generated
         csv_seed = resolve_csv_seed_path()
+
         if File.exists?(csv_seed) do
           seed_database_from_csv(dest_path, csv_seed)
         else
@@ -110,6 +112,7 @@ defmodule RxGenerator.Release do
       candidate
     else
       fallback = Path.expand("../../priv/repo/seeds/dgda_sample.csv", __DIR__)
+
       if File.exists?(fallback) do
         fallback
       else
@@ -120,6 +123,8 @@ defmodule RxGenerator.Release do
 
   defp seed_database_from_csv(db_path, csv_path) do
     {:ok, conn} = Exqlite.Sqlite3.open(db_path)
+
+    Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode=WAL;")
 
     Exqlite.Sqlite3.execute(conn, """
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -143,6 +148,72 @@ defmodule RxGenerator.Release do
     );
     """)
 
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE VIRTUAL TABLE IF NOT EXISTS drug_catalog_fts USING fts5(
+      brand_name,
+      generic_name,
+      strength,
+      dosage_form,
+      tokenize='trigram'
+    );
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_ai AFTER INSERT ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES (new.rowid, new.brand_name, new.generic_name, new.strength, new.dosage_form);
+    END;
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_ad AFTER DELETE ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(drug_catalog_fts, rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES ('delete', old.rowid, old.brand_name, old.generic_name, old.strength, old.dosage_form);
+    END;
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE TRIGGER IF NOT EXISTS drug_catalog_au AFTER UPDATE ON drug_catalog BEGIN
+      INSERT INTO drug_catalog_fts(drug_catalog_fts, rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES ('delete', old.rowid, old.brand_name, old.generic_name, old.strength, old.dosage_form);
+      INSERT INTO drug_catalog_fts(rowid, brand_name, generic_name, strength, dosage_form)
+      VALUES (new.rowid, new.brand_name, new.generic_name, new.strength, new.dosage_form);
+    END;
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE TABLE IF NOT EXISTS drug_catalog_vectors (
+      id TEXT PRIMARY KEY NOT NULL,
+      drug_catalog_item_id TEXT NOT NULL REFERENCES drug_catalog(id) ON DELETE CASCADE,
+      embedding BLOB NOT NULL,
+      dimension INTEGER NOT NULL DEFAULT 256,
+      model_version TEXT NOT NULL,
+      inserted_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE UNIQUE INDEX IF NOT EXISTS drug_catalog_vectors_item_id_idx
+    ON drug_catalog_vectors(drug_catalog_item_id);
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE INDEX IF NOT EXISTS drug_catalog_vectors_version_idx
+    ON drug_catalog_vectors(model_version);
+    """)
+
+    Exqlite.Sqlite3.execute(conn, """
+    CREATE TRIGGER IF NOT EXISTS validate_drug_catalog_vector_dim
+    BEFORE INSERT ON drug_catalog_vectors
+    BEGIN
+      SELECT CASE
+        WHEN NEW.dimension != 256 OR length(NEW.embedding) != 1024 THEN
+          RAISE(ABORT, 'DrugCatalogVector dimension must be 256 and embedding length 1024 bytes')
+      END;
+    END;
+    """)
+
     # Parse and insert seed records from CSV
     lines =
       csv_path
@@ -160,21 +231,59 @@ defmodule RxGenerator.Release do
       if length(parts) >= 6 do
         [_sl, mfg, brand, generic, form, reg | _] = parts
         id = Ash.UUID.generate()
+        vec_id = Ash.UUID.generate()
         now = DateTime.utc_now() |> DateTime.to_iso8601()
 
         stmt =
           "INSERT INTO drug_catalog (id, brand_name, generic_name, strength, dosage_form, manufacturer, dgda_reg_no, is_controlled, inserted_at, updated_at) " <>
-          "VALUES ('#{id}', '#{escape_sql(brand)}', '#{escape_sql(generic)}', 'standard', '#{escape_sql(form)}', '#{escape_sql(mfg)}', '#{escape_sql(reg)}', 0, '#{now}', '#{now}');"
+            "VALUES ('#{id}', '#{escape_sql(brand)}', '#{escape_sql(generic)}', 'standard', '#{escape_sql(form)}', '#{escape_sql(mfg)}', '#{escape_sql(reg)}', 0, '#{now}', '#{now}');"
 
-        Exqlite.Sqlite3.execute(conn, stmt)
+        :ok = Exqlite.Sqlite3.execute(conn, stmt)
+
+        embedding_hex =
+          "#{brand} #{generic} #{form}"
+          |> build_deterministic_embedding()
+          |> Base.encode16()
+
+        vec_stmt =
+          "INSERT INTO drug_catalog_vectors (id, drug_catalog_item_id, embedding, dimension, model_version, inserted_at, updated_at) " <>
+            "VALUES ('#{vec_id}', '#{id}', X'#{embedding_hex}', 256, 'embedding-gemma-2-256d', '#{now}', '#{now}');"
+
+        :ok = Exqlite.Sqlite3.execute(conn, vec_stmt)
       end
     end
 
-    # Record migration marker so Ecto schema migrations is tracked
+    # Record migration markers so Ecto schema_migrations recognizes pre-seeded tables
     now_ts = DateTime.utc_now() |> DateTime.to_iso8601()
-    Exqlite.Sqlite3.execute(conn, "INSERT OR IGNORE INTO schema_migrations (version, inserted_at) VALUES (20261013075516, '#{now_ts}');")
+
+    for version <- [20_261_013_075_516, 20_261_013_075_518, 20_261_015_160_000] do
+      Exqlite.Sqlite3.execute(
+        conn,
+        "INSERT OR IGNORE INTO schema_migrations (version, inserted_at) VALUES (#{version}, '#{now_ts}');"
+      )
+    end
 
     Exqlite.Sqlite3.close(conn)
+  end
+
+  defp build_deterministic_embedding(text) do
+    raw_values =
+      for idx <- 0..255 do
+        <<u16::unsigned-little-integer-16, _rest::binary>> =
+          :crypto.hash(:sha256, "#{text}:#{idx}")
+
+        u16 / 65_535.0 - 0.5
+      end
+
+    norm =
+      raw_values
+      |> Enum.reduce(0.0, fn x, acc -> acc + x * x end)
+      |> :math.sqrt()
+      |> max(1.0e-6)
+
+    for x <- raw_values, into: <<>> do
+      <<x / norm::float-32-little>>
+    end
   end
 
   defp escape_sql(str) do
@@ -223,10 +332,35 @@ defmodule RxGenerator.Release do
     repos = Application.get_env(@app, :ecto_repos, [RxGenerator.Repo])
 
     for repo <- repos do
-      {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
+      {:ok, _, _} =
+        Ecto.Migrator.with_repo(repo, fn r ->
+          Ecto.Migrator.run(r, :up, all: true)
+          backfill_fts5_if_empty(r)
+        end)
     end
 
     :ok
+  end
+
+  defp backfill_fts5_if_empty(repo) do
+    with {:ok, %{rows: [[fts_count]]}} <-
+           Ecto.Adapters.SQL.query(repo, "SELECT count(*) FROM drug_catalog_fts", []),
+         {:ok, %{rows: [[cat_count]]}} <-
+           Ecto.Adapters.SQL.query(repo, "SELECT count(*) FROM drug_catalog", []),
+         true <- fts_count == 0 and cat_count > 0 do
+      Ecto.Adapters.SQL.query!(
+        repo,
+        """
+        INSERT INTO drug_catalog_fts(rowid, brand_name, generic_name, strength, dosage_form)
+        SELECT rowid, brand_name, generic_name, strength, dosage_form FROM drug_catalog;
+        """,
+        []
+      )
+    else
+      _ -> :ok
+    end
+  rescue
+    _ -> :ok
   end
 
   defp generate_secret_key_base do
