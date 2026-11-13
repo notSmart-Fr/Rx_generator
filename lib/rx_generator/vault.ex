@@ -24,35 +24,40 @@ defmodule RxGenerator.Vault do
     {:ok, config}
   end
 
-  defp resolve_vault_key(config) do
-    configured_key =
-      case Keyword.get(config, :ciphers, [])[:default] do
-        {_cipher, opts} when is_list(opts) -> Keyword.get(opts, :key)
-        _ -> nil
-      end
+  @doc false
+  def resolve_vault_key(config \\ []) do
+    case fetch_env_key() do
+      {:ok, env_key} ->
+        env_key
 
-    cond do
-      is_binary(configured_key) and byte_size(configured_key) == 32 ->
-        configured_key
+      :error ->
+        configured_key =
+          case Keyword.get(config, :ciphers, [])[:default] do
+            {_cipher, opts} when is_list(opts) -> Keyword.get(opts, :key)
+            _ -> nil
+          end
 
-      true ->
-        fetch_env_or_fallback()
+        if is_binary(configured_key) and byte_size(configured_key) == 32 do
+          configured_key
+        else
+          fallback_key()
+        end
     end
   end
 
-  defp fetch_env_or_fallback do
-    case System.get_env("RX_VAULT_KEY") do
+  defp fetch_env_key do
+    case System.get_env("CLOAK_KEY") || System.get_env("RX_VAULT_KEY") do
       key when is_binary(key) and byte_size(key) == 32 ->
-        key
+        {:ok, key}
 
       base64 when is_binary(base64) ->
         case Base.decode64(base64) do
-          {:ok, decoded} when byte_size(decoded) == 32 -> decoded
-          _ -> fallback_key()
+          {:ok, decoded} when byte_size(decoded) == 32 -> {:ok, decoded}
+          _ -> :error
         end
 
       _ ->
-        fallback_key()
+        :error
     end
   end
 

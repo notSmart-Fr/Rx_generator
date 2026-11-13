@@ -5,9 +5,13 @@
 const PrintPrescription = {
   mounted() {
     this.handleEvent("print_prescription", () => {
-      // Small timeout to allow any DOM updates to flush before browser print dialogue opens
+      // Small timeout to allow any DOM updates to flush before native print dialog opens
       setTimeout(() => {
-        window.print()
+        if (window.external && typeof window.external.ShowPrintUI === "function") {
+          window.external.ShowPrintUI()
+        } else {
+          window.print()
+        }
       }, 50)
     })
   }

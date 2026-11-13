@@ -106,12 +106,29 @@
 
 /* This file is for your main application CSS */
 
-/* High Court Compliant Print Layout (Spec 03 / User Story 3) */
+/* High Court Compliant Print Layout & Native Spooler Rules */
+@page {
+  margin: 10mm;
+  size: auto;
+}
+
 @media print {
-  /* Suppress all interactive HUD controls, omnibar, search results, and layout bars */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Suppress all interactive HUD controls, omnibar, search results, and browser/layout chrome */
   #prescription-omnibar,
   header,
   nav,
+  footer,
+  .browser-chrome,
   .print\:hidden {
     display: none !important;
   }
@@ -125,6 +142,14 @@
     margin: 0 !important;
     width: 100% !important;
     background-color: transparent !important;
+  }
+
+  /* Enforce side-by-side 2-column chamber header banner regardless of viewport width */
+  .print-two-col-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
   }
 
   /* Enforce bold uppercase generics (equal or greater prominence than brand name) */
@@ -141,8 +166,25 @@
     color: #333 !important;
   }
 
-  /* Force page breaks to avoid splitting a medication block across pages */
-  .rx-item-row {
+  /* Crisp high-contrast 2D Ed25519 QR barcode container */
+  .qr-seal-print {
+    width: 22mm !important;
+    height: 22mm !important;
+    background-color: #ffffff !important;
+    border: 1px solid #000000 !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .qr-seal-print svg {
+    width: 100% !important;
+    height: 100% !important;
+    shape-rendering: crispEdges !important;
+  }
+
+  /* Force page breaks to avoid splitting a medication block or QR seal across pages */
+  .rx-item-row,
+  #print-verification-seal {
     break-inside: avoid;
     page-break-inside: avoid;
   }

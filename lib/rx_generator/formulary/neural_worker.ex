@@ -55,17 +55,33 @@ defmodule RxGenerator.Formulary.NeuralWorker do
     :exit, _ -> :ok
   end
 
+  @doc """
+  Resolves the local offline model directory across dev, test, and assembled release layouts.
+  """
+  def resolve_model_path(configured_path) do
+    candidates = [
+      configured_path,
+      Application.app_dir(:rx_generator, "priv/models/embedding_gemma_2"),
+      Path.expand("../../../priv/models/embedding_gemma_2", __DIR__)
+    ]
+
+    Enum.find(candidates, fn path ->
+      is_binary(path) and File.dir?(path)
+    end) || configured_path
+  end
+
   # Callbacks
 
   @impl true
   def init(opts) do
     config = Application.get_env(:rx_generator, __MODULE__, [])
     merged_opts = Keyword.merge(config, opts)
+    model_path = merged_opts |> Keyword.get(:model_path) |> resolve_model_path()
 
     state = %{
       status: :warming,
       backend: Keyword.get(merged_opts, :backend),
-      model_path: Keyword.get(merged_opts, :model_path),
+      model_path: model_path,
       dimension: Keyword.get(merged_opts, :dimension, @dimension),
       serving: nil,
       notify_pid: Keyword.get(merged_opts, :notify_pid),

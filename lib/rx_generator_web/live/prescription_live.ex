@@ -233,6 +233,11 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   end
 
   @impl true
+  def handle_event("print", params, socket) do
+    handle_event("trigger_print", params, socket)
+  end
+
+  @impl true
   def handle_event("trigger_print", _params, socket) do
     if socket.assigns.draft && socket.assigns.draft.state == :locked do
       _ = RxGenerator.Printing.Spooler.spool(socket.assigns.draft, copies: 1)

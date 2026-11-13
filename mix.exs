@@ -13,7 +13,18 @@ defmodule RxGenerator.MixProject do
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       consolidate_protocols: Mix.env() != :dev,
+      releases: releases(),
       usage_rules: usage_rules()
+    ]
+  end
+
+  defp releases do
+    [
+      rx_generator: [
+        include_erts: true,
+        strip_beams: true,
+        overlays: ["rel/overlays"]
+      ]
     ]
   end
 
