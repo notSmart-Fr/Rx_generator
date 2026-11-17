@@ -214,4 +214,128 @@ defmodule RxGeneratorWeb.PrescriptionLiveTest do
       assert render(view) =~ "Tamper-Evident Ed25519 Seal"
     end
   end
+
+  describe "Edge AI Smart Defaults, Inline Sig Editing & Custom Notes" do
+    test "auto-applies Smart Clinical Defaults when drug is submitted without explicit dosage", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      view
+      |> form("#omnibar-form", %{"query" => "napa"})
+      |> render_submit()
+
+      html = render(view)
+      assert html =~ "Napa"
+      assert html =~ "১+০+১ — ভরা পেটে — ৩ দিন"
+      refute html =~ "সকাল as_directed"
+    end
+
+    test "supports inline dosage, timing, duration, custom note updates, and item removal", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      view
+      |> form("#omnibar-form", %{"query" => "napa"})
+      |> render_submit()
+
+      assert has_element?(view, "#rx-item-0")
+
+      view
+      |> element("#rx-item-0 button", "1+1+1")
+      |> render_click()
+
+      view
+      |> element("#rx-item-0 button", "30 mins before meal")
+      |> render_click()
+
+      view
+      |> element("#rx-item-0 button", "7d")
+      |> render_click()
+
+      view
+      |> form("#item-note-form-0", %{"custom_note" => "with warm water"})
+      |> render_submit()
+
+      html = render(view)
+      assert html =~ "১+১+১ — খাবার ৩০ মিনিট আগে (with warm water) — ৭ দিন"
+
+      view
+      |> element("#remove-item-0")
+      |> render_click()
+
+      refute has_element?(view, "#rx-item-0")
+    end
+
+    test "supports pointer-parity click selection from omnibar dropdown and clears input", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      element(view, "#prescription-omnibar")
+      |> render_keyup(%{"value" => "napa", "query" => "napa"})
+
+      assert has_element?(view, "#candidate-0[onmousedown='event.preventDefault()']")
+
+      element(view, "#candidate-0") |> render_click()
+
+      assert_push_event(view, "set_omnibar_value", %{value: ""})
+      refute has_element?(view, "#omnibar-dropdown")
+      assert has_element?(view, "#rx-item-0")
+      assert render(view) =~ "PARACETAMOL"
+    end
+
+    test "supports bounded Empty stomach, Continue, SOS presets, left-margin C/C helpers, Bengali advice chips, and live A4 paper preview",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      # Live A4 preview & QR placeholder visible on mount, left margin starts empty
+      assert has_element?(view, "#a4-paper-preview")
+      assert has_element?(view, "#qr-seal-placeholder")
+      assert has_element?(view, "#preview-left-margin")
+
+      # Add medication via click
+      element(view, "#prescription-omnibar")
+      |> render_keyup(%{"value" => "napa", "query" => "napa"})
+
+      element(view, "#candidate-0") |> render_click()
+
+      # One-tap Empty stomach + Continue
+      view |> element("#rx-item-0 button", "Empty stomach") |> render_click()
+      view |> element("#rx-item-0 button", "Continue") |> render_click()
+
+      html = render(view)
+      assert html =~ "১+০+১ — খালি পেটে — চলবে"
+      assert html =~ "সকাল ১, দুপুর ০, রাত ১"
+
+      # One-tap SOS omits breakdown subtext
+      view |> element("#rx-item-0 button", "SOS") |> render_click()
+      assert render(view) =~ "প্রয়োজনে — খালি পেটে — চলবে"
+
+      # Left margin C/C prefix helper & General Advice Bengali chip
+      view |> element("#clinical-left-margin button", "+C/C") |> render_click()
+      view |> element("#general-advice-section button", "পর্যাপ্ত পানি পান করবেন") |> render_click()
+
+      updated_html = render(view)
+      assert updated_html =~ "C/C:"
+      assert updated_html =~ "পর্যাপ্ত পানি পান করবেন"
+      assert has_element?(view, "#preview-advice-section", "পর্যাপ্ত পানি পান করবেন")
+    end
+
+    test "detects duplicate active generic ingredients across prescribed drugs", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/prescriptions/new")
+
+      view
+      |> form("#omnibar-form", %{"query" => "napa xtra 1+0+1 5d pc"})
+      |> render_submit()
+
+      view
+      |> form("#omnibar-form", %{"query" => "napa 1+0+1 3d pc"})
+      |> render_submit()
+
+      assert has_element?(view, "#clinical-warnings-banner")
+      assert render(view) =~ "Therapeutic overlap: PARACETAMOL"
+    end
+  end
 end

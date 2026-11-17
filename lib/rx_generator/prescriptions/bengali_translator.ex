@@ -21,10 +21,23 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   @timing_map %{
     :pc => "ভরা পেটে",
     "pc" => "ভরা পেটে",
-    :ac => "খাবারের আগে",
-    "ac" => "খাবারের আগে",
+    "after_meal" => "ভরা পেটে",
+    "after meal" => "ভরা পেটে",
+    :ac => "খাবার ৩০ মিনিট আগে",
+    "ac" => "খাবার ৩০ মিনিট আগে",
+    "before_meal" => "খাবার ৩০ মিনিট আগে",
+    "before meal" => "খাবার ৩০ মিনিট আগে",
+    :empty => "খালি পেটে",
+    "empty" => "খালি পেটে",
+    "empty_stomach" => "খালি পেটে",
+    "empty stomach" => "খালি পেটে",
+    :with_meal => "খাবারের সাথে",
+    "with_meal" => "খাবারের সাথে",
+    "with meal" => "খাবারের সাথে",
     :hs => "ঘুমানোর আগে",
     "hs" => "ঘুমানোর আগে",
+    "at_bedtime" => "ঘুমানোর আগে",
+    "bedtime" => "ঘুমানোর আগে",
     :sos => "প্রয়োজনে",
     "sos" => "প্রয়োজনে",
     :stat => "অবিলম্বে",
@@ -53,32 +66,63 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   @doc """
   Generates the secondary colloquial breakdown line (e.g. `সকাল ১, দুপুর ০, রাত ১`).
   """
+  def to_breakdown(matrix)
+      when matrix in [:as_directed, "as_directed", "as directed", nil, ""],
+      do: nil
+
   def to_breakdown(dosage_matrix) when is_binary(dosage_matrix) do
-    slots = String.split(dosage_matrix, "+")
+    if String.contains?(dosage_matrix, "+") do
+      slots = String.split(dosage_matrix, "+")
 
-    labels =
-      case length(slots) do
-        4 -> @slot_labels_4
-        _ -> @slot_labels_3
-      end
+      labels =
+        case length(slots) do
+          4 -> @slot_labels_4
+          _ -> @slot_labels_3
+        end
 
-    slots
-    |> Enum.zip(labels)
-    |> Enum.map_join(", ", fn {val, label} ->
-      bengali_val = to_bengali_numerals(val)
-      "#{label} #{bengali_val}"
-    end)
+      slots
+      |> Enum.zip(labels)
+      |> Enum.map_join(", ", fn {val, label} ->
+        bengali_val = to_bengali_numerals(val)
+        "#{label} #{bengali_val}"
+      end)
+    else
+      nil
+    end
   end
 
   def to_breakdown(_), do: nil
 
   @doc """
-  Translates a timing token atom or string into Bengali.
+  Translates a timing token atom or string (including optional `; custom note`) into Bengali.
   """
   def translate_timing(nil), do: nil
 
-  def translate_timing(code) when is_atom(code) or is_binary(code) do
+  def translate_timing(code) when is_atom(code) do
     Map.get(@timing_map, code)
+  end
+
+  def translate_timing(code) when is_binary(code) do
+    case Map.get(@timing_map, code) do
+      nil ->
+        if String.contains?(code, ";") do
+          [raw_timing, raw_note] = String.split(code, ";", parts: 2)
+          base_timing = Map.get(@timing_map, String.trim(raw_timing))
+          custom_note = raw_note |> String.trim() |> to_bengali_numerals()
+
+          cond do
+            base_timing && custom_note != "" -> "#{base_timing} (#{custom_note})"
+            base_timing -> base_timing
+            custom_note != "" -> custom_note
+            true -> nil
+          end
+        else
+          nil
+        end
+
+      translated ->
+        translated
+    end
   end
 
   @doc """
@@ -86,17 +130,25 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   """
   def translate_duration(nil), do: nil
   def translate_duration(:as_needed), do: "প্রয়োজনমতো"
+  def translate_duration("as_needed"), do: "প্রয়োজনমতো"
   def translate_duration("as needed"), do: "প্রয়োজনমতো"
+  def translate_duration(:continue), do: "চলবে"
+  def translate_duration("continue"), do: "চলবে"
+  def translate_duration("cont"), do: "চলবে"
 
   def translate_duration(expr) when is_binary(expr) do
     trimmed = String.trim(expr)
+    lower = String.downcase(trimmed)
 
     cond do
-      trimmed == "as needed" or trimmed == ":as_needed" ->
+      lower in ["as needed", "as_needed", ":as_needed"] ->
         "প্রয়োজনমতো"
 
-      Regex.match?(~r/^(\d+)\s*days?$/i, trimmed) ->
-        [_, num] = Regex.run(~r/^(\d+)\s*days?$/i, trimmed)
+      lower in ["continue", "cont", ":continue"] ->
+        "চলবে"
+
+      Regex.match?(~r/^(\d+)\s*d(?:ays?)?$/i, trimmed) ->
+        [_, num] = Regex.run(~r/^(\d+)\s*d(?:ays?)?$/i, trimmed)
         "#{to_bengali_numerals(num)} দিন"
 
       Regex.match?(~r/^(\d+)\s*weeks?$/i, trimmed) ->
@@ -117,10 +169,25 @@ defmodule RxGenerator.Prescriptions.BengaliTranslator do
   """
   def translate_dosage(nil), do: nil
   def translate_dosage(:as_directed), do: "চিকিৎসকের পরামর্শ অনুযায়ী"
+  def translate_dosage("as_directed"), do: "চিকিৎসকের পরামর্শ অনুযায়ী"
   def translate_dosage("as directed"), do: "চিকিৎসকের পরামর্শ অনুযায়ী"
+  def translate_dosage(dose) when dose in [:sos, "sos", "SOS"], do: "প্রয়োজনে"
+  def translate_dosage(dose) when dose in ["1 tsp", "1tsp"], do: "১ চামচ"
+  def translate_dosage(dose) when dose in ["as needed", "as_needed"], do: "প্রয়োজনমতো"
 
   def translate_dosage(matrix) when is_binary(matrix) do
-    to_bengali_numerals(matrix)
+    cond do
+      match = Regex.run(~r/^(\d+)\s*drops?$/i, String.trim(matrix)) ->
+        [_, num] = match
+        "#{to_bengali_numerals(num)} ফোঁটা"
+
+      match = Regex.run(~r/^(\d+)\s*puffs?$/i, String.trim(matrix)) ->
+        [_, num] = match
+        "#{to_bengali_numerals(num)} পাফ"
+
+      true ->
+        to_bengali_numerals(matrix)
+    end
   end
 
   def translate_dosage(_), do: nil

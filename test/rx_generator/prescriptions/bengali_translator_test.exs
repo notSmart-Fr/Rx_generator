@@ -22,7 +22,7 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorTest do
 
     test "translates 4-slot dosage matrices" do
       canonical = BengaliTranslator.to_canonical("1+1+1+1", "7 days", :ac)
-      assert canonical == "১+১+১+১ — খাবারের আগে — ৭ দিন"
+      assert canonical == "১+১+১+১ — খাবার ৩০ মিনিট আগে — ৭ দিন"
 
       breakdown = BengaliTranslator.to_breakdown("1+1+1+1")
       assert breakdown == "সকাল ১, দুপুর ১, সন্ধ্যা ১, রাত ১"
@@ -36,13 +36,27 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorTest do
     test "handles clinical default fallbacks safely without guessing" do
       assert BengaliTranslator.to_canonical(:as_directed, :as_needed, nil) ==
                "চিকিৎসকের পরামর্শ অনুযায়ী — প্রয়োজনমতো"
+
+      assert BengaliTranslator.to_canonical("as_directed", "as_needed", nil) ==
+               "চিকিৎসকের পরামর্শ অনুযায়ী — প্রয়োজনমতো"
+
+      assert BengaliTranslator.to_breakdown("as_directed") == nil
+    end
+
+    test "translates composite timing and custom notes cleanly" do
+      assert BengaliTranslator.to_canonical("1+0+1", "5 days", "pc; with warm water") ==
+               "১+০+১ — ভরা পেটে (with warm water) — ৫ দিন"
+
+      assert BengaliTranslator.to_canonical("1+0+1", "5 days", "; take 2 hours apart") ==
+               "১+০+১ — take ২ hours apart — ৫ দিন"
     end
   end
 
   describe "translate_timing/1 clinical codes" do
     test "translates all standard Latin medical signa" do
       assert BengaliTranslator.translate_timing(:pc) == "ভরা পেটে"
-      assert BengaliTranslator.translate_timing(:ac) == "খাবারের আগে"
+      assert BengaliTranslator.translate_timing(:ac) == "খাবার ৩০ মিনিট আগে"
+      assert BengaliTranslator.translate_timing(:empty) == "খালি পেটে"
       assert BengaliTranslator.translate_timing(:hs) == "ঘুমানোর আগে"
       assert BengaliTranslator.translate_timing(:sos) == "প্রয়োজনে"
       assert BengaliTranslator.translate_timing(:stat) == "অবিলম্বে"
@@ -60,7 +74,15 @@ defmodule RxGenerator.Prescriptions.BengaliTranslatorTest do
       assert BengaliTranslator.translate_duration("2 months") == "২ মাস"
       assert BengaliTranslator.translate_duration(:as_needed) == "প্রয়োজনমতো"
       assert BengaliTranslator.translate_duration("as needed") == "প্রয়োজনমতো"
+      assert BengaliTranslator.translate_duration("continue") == "চলবে"
+      assert BengaliTranslator.translate_duration("cont") == "চলবে"
       assert BengaliTranslator.translate_duration(nil) == nil
+    end
+
+    test "handles bounded non-matrix doses cleanly" do
+      assert BengaliTranslator.translate_dosage("1 tsp") == "১ চামচ"
+      assert BengaliTranslator.translate_dosage("SOS") == "প্রয়োজনে"
+      assert BengaliTranslator.to_breakdown("SOS") == nil
     end
   end
 end

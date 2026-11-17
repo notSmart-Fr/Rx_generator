@@ -186,7 +186,7 @@ defmodule RxGenerator.Prescriptions.VerificationTest do
       rx: rx,
       item: item
     } do
-      unregistered_bmdc = "A-77777"
+      unregistered_bmdc = "A-UNREG-#{:erlang.unique_integer([:positive])}"
       unregistered_rx = %{rx | prescriber_bmdc_no: unregistered_bmdc}
       manifest = Manifest.compile(unregistered_rx, [item])
 

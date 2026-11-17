@@ -4,6 +4,7 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   alias RxGenerator.Formulary.Search
   alias RxGenerator.Prescriptions
   alias RxGenerator.Prescriptions.ShorthandParser
+  alias RxGenerator.Prescriptions.SmartDefaults
 
   @impl true
   def mount(_params, _session, socket) do
@@ -60,32 +61,133 @@ defmodule RxGeneratorWeb.PrescriptionLive do
 
   @impl true
   def render(assigns) do
+    locked = assigns.draft && assigns.draft.state == :locked
+
+    assigns =
+      assigns
+      |> assign(:locked, !!locked)
+      |> assign(:items_count, length(assigns.items))
+
     ~H"""
-    <div class="min-h-screen bg-zinc-100 py-10 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-4xl mx-auto space-y-6">
-        <%= if @draft && @draft.state != :locked do %>
+    <Layouts.app flash={@flash} wide>
+      <div
+        id="workspace-toolbar"
+        class="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-neutral-200 pb-3 print:hidden"
+      >
+        <div class="flex flex-wrap items-baseline gap-3">
+          <h1 class="text-lg font-semibold tracking-tight text-neutral-950">New prescription</h1>
+          <span class="font-mono text-xs text-neutral-500">
+            {@draft && (@draft.rx_number || "Draft")}
+          </span>
+          <span
+            :if={@locked}
+            id="prescription-locked-badge"
+            class="inline-flex items-center gap-1 rounded-[2px] border border-emerald-300 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-800"
+          >
+            <.icon name="hero-lock-closed" class="size-3" /> FINALIZED &amp; IMMUTABLE
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div :if={!@locked} id="chamber-switcher" class="flex items-center gap-1.5">
+            <%= if @chambers == [] do %>
+              <span class="text-[11px] text-neutral-500">No chamber configured</span>
+            <% else %>
+              <label for="chamber-select-dropdown" class="text-[11px] text-neutral-500">
+                Chamber
+              </label>
+              <select
+                id="chamber-select-dropdown"
+                name="chamber_id"
+                phx-change="switch_chamber"
+                class="min-h-9 rounded-[3px] border border-neutral-300 bg-white px-2 text-sm text-neutral-900 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+              >
+                <option
+                  :for={chamber <- @chambers}
+                  value={chamber.id}
+                  selected={@active_chamber && chamber.id == @active_chamber.id}
+                >
+                  {chamber.chamber_name}
+                </option>
+              </select>
+            <% end %>
+          </div>
+
+          <%= if @locked do %>
+            <button
+              id="print-prescription-btn"
+              type="button"
+              phx-click="trigger_print"
+              phx-disable-with="Preparing…"
+              class="min-h-9 inline-flex items-center gap-2 rounded-[3px] bg-[#0F4C5C] px-4 text-sm font-semibold text-white hover:bg-[#0B3A46] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F4C5C]"
+            >
+              <.icon name="hero-printer" class="size-4" /> Print prescription
+            </button>
+          <% else %>
+            <button
+              id="finalize-prescription-btn"
+              type="button"
+              phx-click="finalize_prescription"
+              phx-disable-with="Finalizing…"
+              disabled={@items_count == 0}
+              class={[
+                "min-h-9 inline-flex items-center gap-2 rounded-[3px] px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F4C5C]",
+                if(@items_count == 0,
+                  do: "cursor-not-allowed bg-neutral-200 text-neutral-500",
+                  else: "bg-[#0F4C5C] text-white hover:bg-[#0B3A46]"
+                )
+              ]}
+            >
+              <.icon name="hero-lock-closed" class="size-4" /> Finalize prescription
+            </button>
+          <% end %>
+        </div>
+      </div>
+
+      <p :if={!@locked} class="mb-4 text-[11px] leading-snug text-neutral-500 print:hidden">
+        Finalizing locks this sheet permanently. Print the paper on the right — it is the
+        prescription.
+      </p>
+
+      <div id="workspace-grid" class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+        <div class="space-y-4 lg:col-span-5 print:hidden">
           <.omnibar
+            :if={!@locked}
             id="prescription-omnibar"
             query={@query}
             error={@error}
             candidates={@candidates}
             highlighted_index={@highlighted_index}
           />
-        <% end %>
-        <.prescription_canvas
-          id="prescription-canvas"
-          phx-hook="PrintPrescription"
-          items={@items}
-          state={if(@draft, do: @draft.state, else: :draft)}
-          rx_number={if(@draft, do: @draft.rx_number, else: nil)}
-          prescriber={@prescriber}
-          chambers={@chambers}
-          active_chamber={@active_chamber}
-          draft={@draft}
-          qr_svg={@qr_svg}
-        />
+
+          <.prescription_editor
+            id="prescription-canvas"
+            items={@items}
+            clinical_warnings={SmartDefaults.detect_warnings(@items)}
+            state={if(@draft, do: @draft.state, else: :draft)}
+            draft={@draft}
+          />
+        </div>
+
+        <div class="lg:col-span-7">
+          <div class="mb-2 flex items-center justify-between print:hidden">
+            <p class="text-[11px] font-medium text-neutral-500">Printed sheet</p>
+            <p class="text-[11px] text-neutral-400">A4 · 210 × 297 mm</p>
+          </div>
+
+          <.a4_paper_preview
+            id="a4-paper-preview"
+            items={@items}
+            state={if(@draft, do: @draft.state, else: :draft)}
+            rx_number={if(@draft, do: @draft.rx_number, else: nil)}
+            prescriber={@prescriber}
+            active_chamber={@active_chamber}
+            draft={@draft}
+            qr_svg={@qr_svg}
+          />
+        </div>
       </div>
-    </div>
+    </Layouts.app>
     """
   end
 
@@ -135,11 +237,18 @@ defmodule RxGeneratorWeb.PrescriptionLive do
     if draft && draft.state == :locked do
       {:noreply, socket}
     else
+      {existing_notes, existing_advice} =
+        SmartDefaults.split_clinical_notes_and_advice(draft && draft.clinical_notes)
+
+      new_notes = Map.get(params, "clinical_notes", existing_notes)
+      new_advice = Map.get(params, "general_advice", existing_advice)
+      combined_notes = SmartDefaults.combine_clinical_notes_and_advice(new_notes, new_advice)
+
       patient_params = %{
-        patient_name: params["patient_name"],
-        patient_phone: params["patient_phone"],
-        patient_age: params["patient_age"],
-        clinical_notes: params["clinical_notes"]
+        patient_name: Map.get(params, "patient_name", draft && draft.patient_name),
+        patient_phone: Map.get(params, "patient_phone", draft && draft.patient_phone),
+        patient_age: Map.get(params, "patient_age", draft && draft.patient_age),
+        clinical_notes: combined_notes
       }
 
       if draft do
@@ -153,6 +262,65 @@ defmodule RxGeneratorWeb.PrescriptionLive do
       else
         {:noreply, socket}
       end
+    end
+  end
+
+  @impl true
+  def handle_event("append_clinical_prefix", %{"prefix" => prefix}, socket) do
+    draft = socket.assigns.draft
+
+    if is_nil(draft) or draft.state == :locked do
+      {:noreply, socket}
+    else
+      {notes, advice} = SmartDefaults.split_clinical_notes_and_advice(draft.clinical_notes)
+      updated_notes = SmartDefaults.append_prefix(notes, prefix)
+      combined = SmartDefaults.combine_clinical_notes_and_advice(updated_notes, advice)
+
+      case Prescriptions.update_patient_details(draft, %{clinical_notes: combined}) do
+        {:ok, updated} -> {:noreply, assign(socket, draft: updated)}
+        {:error, _} -> {:noreply, socket}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_advice_chip", %{"advice" => chip}, socket) do
+    draft = socket.assigns.draft
+
+    if is_nil(draft) or draft.state == :locked do
+      {:noreply, socket}
+    else
+      {notes, advice} = SmartDefaults.split_clinical_notes_and_advice(draft.clinical_notes)
+      updated_advice = SmartDefaults.toggle_advice_line(advice, chip)
+      combined = SmartDefaults.combine_clinical_notes_and_advice(notes, updated_advice)
+
+      case Prescriptions.update_patient_details(draft, %{clinical_notes: combined}) do
+        {:ok, updated} -> {:noreply, assign(socket, draft: updated)}
+        {:error, _} -> {:noreply, socket}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("select_candidate", %{"index" => index_str}, socket) do
+    case Integer.parse(to_string(index_str)) do
+      {index, ""} ->
+        case Enum.at(socket.assigns.candidates, index) do
+          nil ->
+            {:noreply, socket}
+
+          drug ->
+            query = String.trim(socket.assigns.query || "")
+            parsed = ShorthandParser.parse(if query == "", do: drug.brand_name, else: query)
+
+            {:noreply, updated_socket} =
+              persist_and_assign_item(drug, parsed, query, socket)
+
+            {:noreply, push_event(updated_socket, "set_omnibar_value", %{value: ""})}
+        end
+
+      _ ->
+        {:noreply, socket}
     end
   end
 
@@ -202,22 +370,74 @@ defmodule RxGeneratorWeb.PrescriptionLive do
   end
 
   @impl true
-  def handle_event("autocomplete_candidate", _params, socket) do
-    candidates = socket.assigns.candidates
-    index = socket.assigns.highlighted_index
+  def handle_event("autocomplete_candidate", %{"index" => index_str}, socket) do
+    case Integer.parse(to_string(index_str)) do
+      {index, ""} ->
+        autocomplete_candidate_at(socket, index)
 
-    case Enum.at(candidates, index) do
-      nil ->
+      _ ->
         {:noreply, socket}
+    end
+  end
 
-      candidate ->
-        # Autocomplete candidate brand name and strength into the omnibar
-        new_val = "#{candidate.brand_name} "
+  def handle_event("autocomplete_candidate", _params, socket) do
+    autocomplete_candidate_at(socket, socket.assigns.highlighted_index)
+  end
 
-        {:noreply,
-         socket
-         |> assign(query: new_val, candidates: [], highlighted_index: 0)
-         |> push_event("set_omnibar_value", %{value: new_val})}
+  @impl true
+  def handle_event("apply_sig_token", %{"token" => token}, socket) do
+    trimmed_query = String.trim(socket.assigns.query || "")
+
+    new_val =
+      if trimmed_query == "" do
+        ""
+      else
+        "#{trimmed_query} #{token} "
+      end
+
+    {:noreply,
+     socket
+     |> assign(query: new_val, candidates: [], highlighted_index: 0, error: nil)
+     |> push_event("set_omnibar_value", %{value: new_val})}
+  end
+
+  @impl true
+  def handle_event("update_item_sig", %{"item_id" => item_id} = params, socket) do
+    draft = socket.assigns.draft
+
+    if draft && draft.state == :locked do
+      {:noreply, socket}
+    else
+      case Prescriptions.update_item_sig(item_id, params) do
+        {:ok, updated_item} ->
+          updated_items =
+            Enum.map(socket.assigns.items, fn item ->
+              if item.id == updated_item.id, do: updated_item, else: item
+            end)
+
+          {:noreply, assign(socket, items: updated_items, error: nil)}
+
+        {:error, _err} ->
+          {:noreply, socket}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("remove_prescription_item", %{"item_id" => item_id}, socket) do
+    draft = socket.assigns.draft
+
+    if draft && draft.state == :locked do
+      {:noreply, socket}
+    else
+      case Prescriptions.remove_item(item_id) do
+        :ok ->
+          remaining = Enum.reject(socket.assigns.items, &(&1.id == item_id))
+          {:noreply, assign(socket, items: remaining, error: nil)}
+
+        {:error, _err} ->
+          {:noreply, socket}
+      end
     end
   end
 
@@ -281,6 +501,24 @@ defmodule RxGeneratorWeb.PrescriptionLive do
     end
   end
 
+  defp autocomplete_candidate_at(socket, index) do
+    candidates = socket.assigns.candidates
+
+    case Enum.at(candidates, index) do
+      nil ->
+        {:noreply, socket}
+
+      candidate ->
+        # Autocomplete candidate brand name and strength into the omnibar
+        new_val = "#{candidate.brand_name} "
+
+        {:noreply,
+         socket
+         |> assign(query: new_val, candidates: [], highlighted_index: 0)
+         |> push_event("set_omnibar_value", %{value: new_val})}
+    end
+  end
+
   defp compute_qr_svg(%{state: :locked, canonical_manifest: manifest, signature: sig})
        when is_binary(manifest) and is_binary(sig) do
     payload = RxGenerator.Prescriptions.Crypto.build_qr_payload(manifest, sig)
@@ -340,10 +578,21 @@ defmodule RxGeneratorWeb.PrescriptionLive do
     draft = socket.assigns.draft || elem(Prescriptions.get_or_create_active_draft(), 1)
     display_order = length(socket.assigns.items)
 
+    # Option A: Auto-apply Smart Clinical Defaults when no explicit dosage/duration/timing was typed
+    {dosage_matrix, duration_expression, timing_code} =
+      if parsed.dosage_matrix == :as_directed and parsed.duration_expression == :as_needed and
+           is_nil(parsed.timing_code) do
+        defaults = SmartDefaults.for_drug(drug)
+        {defaults.dosage_matrix, defaults.duration_expression, defaults.timing_code}
+      else
+        {parsed.dosage_matrix, parsed.duration_expression, parsed.timing_code}
+      end
+
     shorthand_map = %{
-      dosage_matrix: parsed.dosage_matrix,
-      duration_expression: parsed.duration_expression,
-      timing_code: parsed.timing_code
+      dosage_matrix: dosage_matrix,
+      duration_expression: duration_expression,
+      timing_code: timing_code,
+      special_instruction: parsed.special_instruction
     }
 
     case Prescriptions.add_item_to_draft(draft, drug, shorthand_map, display_order) do

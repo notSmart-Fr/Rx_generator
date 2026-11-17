@@ -130,7 +130,7 @@ defmodule RxGeneratorWeb.DesktopPrintTest do
 
       assert css =~ "@page"
       assert css =~ "margin: 10mm"
-      assert css =~ "size: auto"
+      assert css =~ "size: A4"
       assert css =~ ".print-two-col-header"
       assert css =~ ".qr-seal-print"
       assert css =~ "shape-rendering: crispEdges"

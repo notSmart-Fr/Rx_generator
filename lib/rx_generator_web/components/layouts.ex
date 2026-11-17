@@ -31,41 +31,50 @@ defmodule RxGeneratorWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://phoenix.hexdocs.pm/scopes.html)"
 
+  attr :wide, :boolean,
+    default: false,
+    doc: "use the full workspace width instead of the reading column"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-neutral-950 focus:outline-2 focus:outline-offset-2 focus:outline-[#0F4C5C]"
+    >
+      Skip to main content
+    </a>
+    <header id="app-header" class="border-b border-neutral-200 bg-white print:hidden">
+      <div class={[
+        "mx-auto flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8",
+        @wide && "max-w-[1600px]",
+        !@wide && "max-w-2xl"
+      ]}>
+        <a href="/" class="flex items-center gap-2">
+          <img src={~p"/images/logo.svg"} width="28" alt="" />
+          <span class="text-sm font-semibold tracking-tight text-neutral-950">RxGenerator</span>
         </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://phoenix.hexdocs.pm/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
+        <nav aria-label="Primary" class="flex items-center gap-4">
+          <.link
+            navigate={~p"/prescriptions/new"}
+            class="min-h-9 inline-flex items-center rounded-[3px] px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0F4C5C]"
+          >
+            New prescription
+          </.link>
+        </nav>
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
-      </div>
+    <main
+      id="main-content"
+      class={[
+        "mx-auto bg-neutral-50 px-4 py-6 sm:px-6 lg:px-8",
+        @wide && "max-w-[1600px]",
+        !@wide && "max-w-2xl"
+      ]}
+    >
+      {render_slot(@inner_block)}
     </main>
 
     <.flash_group flash={@flash} />

@@ -106,10 +106,21 @@
 
 /* This file is for your main application CSS */
 
+/* A4 prescription sheet */
+.a4-sheet {
+  font-family: "Noto Sans Bengali", "Nirmala UI", "SolaimanLipi", ui-sans-serif, system-ui,
+    sans-serif;
+}
+
+.a4-sheet .rx-item-row {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 /* High Court Compliant Print Layout & Native Spooler Rules */
 @page {
   margin: 10mm;
-  size: auto;
+  size: A4;
 }
 
 @media print {
@@ -123,28 +134,45 @@
     -webkit-print-color-adjust: exact !important;
   }
 
-  /* Suppress all interactive HUD controls, omnibar, search results, and browser/layout chrome */
-  #prescription-omnibar,
-  header,
-  nav,
-  footer,
-  .browser-chrome,
+  /* The sheet is the only printed content. */
+  #app-header,
+  #flash-group,
+  a[href="#main-content"],
   .print\:hidden {
     display: none !important;
   }
 
-  /* Ensure prescription canvas expands to full paper width without shadows or margins */
-  #prescription-canvas {
-    box-shadow: none !important;
-    border: none !important;
-    max-width: 100% !important;
-    padding: 0 !important;
+  #main-content {
     margin: 0 !important;
-    width: 100% !important;
-    background-color: transparent !important;
+    padding: 0 !important;
+    max-width: none !important;
+    background: #ffffff !important;
   }
 
-  /* Enforce side-by-side 2-column chamber header banner regardless of viewport width */
+  /* Collapse the workspace grid so the sheet spans the printable width */
+  #workspace-grid {
+    display: block !important;
+    margin: 0 !important;
+  }
+
+  #workspace-grid > * {
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .a4-sheet {
+    width: auto !important;
+    max-width: none !important;
+    min-height: 277mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Chamber and physician banner stays side-by-side regardless of viewport width */
   .print-two-col-header {
     display: flex !important;
     flex-direction: row !important;
@@ -154,7 +182,7 @@
 
   /* Enforce bold uppercase generics (equal or greater prominence than brand name) */
   .generic-name-print {
-    font-size: 1.25rem !important;
+    font-size: 1.1rem !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     color: #000 !important;
@@ -182,10 +210,17 @@
     shape-rendering: crispEdges !important;
   }
 
-  /* Force page breaks to avoid splitting a medication block or QR seal across pages */
+  /* Never split a medication block, the header, or the verification seal */
   .rx-item-row,
-  #print-verification-seal {
+  #print-verification-seal,
+  .a4-sheet header,
+  .a4-sheet footer {
     break-inside: avoid;
     page-break-inside: avoid;
   }
+}
+
+html,
+body {
+  overscroll-behavior-y: contain;
 }

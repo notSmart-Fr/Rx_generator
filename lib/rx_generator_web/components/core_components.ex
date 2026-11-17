@@ -246,6 +246,8 @@ defmodule RxGeneratorWeb.CoreComponents do
         <select
           id={@id}
           name={@name}
+          aria-invalid={@errors != []}
+          aria-describedby={@errors != [] && "#{@id}-error"}
           class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
           multiple={@multiple}
           {@rest}
@@ -254,7 +256,9 @@ defmodule RxGeneratorWeb.CoreComponents do
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={"#{@id}-error"}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
@@ -267,6 +271,8 @@ defmodule RxGeneratorWeb.CoreComponents do
         <textarea
           id={@id}
           name={@name}
+          aria-invalid={@errors != []}
+          aria-describedby={@errors != [] && "#{@id}-error"}
           class={[
             @class || "w-full textarea",
             @errors != [] && (@error_class || "textarea-error")
@@ -274,7 +280,9 @@ defmodule RxGeneratorWeb.CoreComponents do
           {@rest}
         >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={"#{@id}-error"}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
@@ -290,6 +298,8 @@ defmodule RxGeneratorWeb.CoreComponents do
           name={@name}
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+          aria-invalid={@errors != []}
+          aria-describedby={@errors != [] && "#{@id}-error"}
           class={[
             @class || "w-full input",
             @errors != [] && (@error_class || "input-error")
@@ -297,7 +307,9 @@ defmodule RxGeneratorWeb.CoreComponents do
           {@rest}
         />
       </label>
-      <.error :for={msg <- @errors}>{msg}</.error>
+      <div :if={@errors != []} id={"#{@id}-error"}>
+        <.error :for={msg <- @errors}>{msg}</.error>
+      </div>
     </div>
     """
   end
@@ -445,10 +457,11 @@ defmodule RxGeneratorWeb.CoreComponents do
   """
   attr :name, :string, required: true
   attr :class, :any, default: "size-4"
+  attr :rest, :global
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} />
+    <span class={[@name, @class]} aria-hidden={!Map.has_key?(@rest, :"aria-label")} {@rest} />
     """
   end
 
@@ -514,15 +527,15 @@ defmodule RxGeneratorWeb.CoreComponents do
 
   def omnibar(assigns) do
     ~H"""
-    <div class="relative w-full max-w-3xl mx-auto my-6">
-      <form id="omnibar-form" phx-submit="commit_omnibar" class="relative">
+    <div class="relative w-full">
+      <form id="omnibar-form" phx-submit="commit_omnibar" novalidate class="relative">
         <div class={[
-          "flex items-center rounded-xl bg-white shadow-lg border px-4 py-3 transition-all",
-          @error && "border-amber-500 ring-2 ring-amber-200",
+          "flex h-11 items-center rounded-[3px] border bg-white px-3 transition-colors",
+          @error && "border-amber-500 ring-1 ring-amber-300",
           !@error &&
-            "border-zinc-300 focus-within:border-zinc-800 focus-within:ring-2 focus-within:ring-zinc-400"
+            "border-neutral-300 focus-within:border-[#0F4C5C] focus-within:ring-1 focus-within:ring-[#0F4C5C]"
         ]}>
-          <.icon name="hero-magnifying-glass" class="w-6 h-6 text-zinc-400 mr-3" />
+          <.icon name="hero-magnifying-glass" class="mr-2.5 h-5 w-5 text-neutral-400" />
           <input
             id={@id}
             name="query"
@@ -530,14 +543,17 @@ defmodule RxGeneratorWeb.CoreComponents do
             value={@query}
             autofocus
             autocomplete="off"
-            placeholder="Type shorthand (e.g. napa xtra 1+0+1 5d pc)..."
+            aria-label="Search the DGDA drug catalog"
+            aria-expanded={@candidates != []}
+            aria-controls="omnibar-dropdown"
+            placeholder="Search DGDA drug catalog — brand or generic (e.g. Napa, Ciprocin 500)"
             phx-keyup="parse_and_suggest"
             phx-debounce="50"
             phx-hook="Omnibar"
-            class="w-full bg-transparent border-0 p-0 text-zinc-900 placeholder:text-zinc-400 text-lg font-medium focus:outline-none focus:ring-0"
+            class="w-full border-0 bg-transparent p-0 text-base text-neutral-950 placeholder:text-neutral-400 focus:outline-none focus:ring-0"
           />
-          <kbd class="hidden sm:inline-block px-2 py-1 text-xs font-semibold text-zinc-500 bg-zinc-100 border border-zinc-200 rounded-md">
-            Enter ↵
+          <kbd class="hidden shrink-0 rounded-[3px] border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[11px] font-medium text-neutral-500 sm:inline-block">
+            Enter
           </kbd>
         </div>
       </form>
@@ -545,45 +561,50 @@ defmodule RxGeneratorWeb.CoreComponents do
       <%= if @candidates != [] do %>
         <div
           id="omnibar-dropdown"
-          class="absolute left-0 right-0 mt-2 z-50 bg-white rounded-xl shadow-2xl border border-zinc-200 overflow-hidden divide-y divide-zinc-100 animate-in fade-in duration-100"
+          aria-live="polite"
+          class="absolute inset-x-0 top-full z-40 mt-1 overflow-hidden rounded-[3px] border border-neutral-200 bg-white divide-y divide-neutral-200"
         >
-          <div
+          <button
             :for={{candidate, idx} <- Enum.with_index(@candidates)}
+            type="button"
             id={"candidate-#{idx}"}
+            onmousedown="event.preventDefault()"
+            phx-click="select_candidate"
+            phx-value-index={idx}
             class={[
-              "px-4 py-2.5 flex items-center justify-between cursor-pointer transition-colors",
-              idx == @highlighted_index && "bg-zinc-100 font-medium text-zinc-900",
-              idx != @highlighted_index && "hover:bg-zinc-50 text-zinc-700"
+              "flex w-full min-h-11 items-center justify-between gap-3 px-3 py-2 text-left transition-colors",
+              idx == @highlighted_index && "bg-zinc-100",
+              idx != @highlighted_index && "hover:bg-neutral-50"
             ]}
           >
-            <div>
-              <span class="font-bold text-zinc-900">{candidate.brand_name}</span>
-              <span class="text-xs font-black uppercase tracking-wide text-zinc-500 ml-2">({String.upcase(
-                candidate.generic_name
-              )})</span>
+            <div class="min-w-0">
+              <span class="text-sm font-black uppercase tracking-wide text-neutral-950">
+                {String.upcase(candidate.generic_name)}
+              </span>
+              <span class="ml-2 text-[11px] text-neutral-500">{candidate.brand_name}</span>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-medium bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full border border-zinc-200">
-                {candidate.dosage_form} &bull; {candidate.strength}
+            <div class="flex shrink-0 items-center gap-2">
+              <span class="rounded-[3px] border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 font-mono text-[11px] text-neutral-600">
+                {candidate.dosage_form} · {candidate.strength}
               </span>
               <%= if idx == @highlighted_index do %>
-                <span class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:inline">
-                  Tab ⇥
+                <span class="hidden text-[10px] font-semibold uppercase tracking-wide text-neutral-400 sm:inline">
+                  Add
                 </span>
               <% end %>
             </div>
-          </div>
+          </button>
 
-          <div class="px-4 py-1.5 bg-zinc-50 text-[11px] text-zinc-400 flex items-center justify-between">
-            <span>↑↓ to navigate &bull; Tab to complete &bull; Esc to dismiss</span>
-            <span>Local DGDA Snapshot</span>
+          <div class="flex items-center justify-between bg-neutral-50 px-3 py-1.5 text-[11px] text-neutral-500">
+            <span>↑↓ navigate · Enter or click to add · Esc to dismiss</span>
+            <span>Local DGDA snapshot</span>
           </div>
         </div>
       <% end %>
 
       <%= if @error do %>
-        <div class="mt-2 text-sm text-amber-600 font-medium flex items-center gap-1.5">
-          <.icon name="hero-exclamation-triangle" class="w-4 h-4 text-amber-600" />
+        <div class="mt-2 flex items-center gap-1.5 text-sm font-medium text-amber-700" role="status">
+          <.icon name="hero-exclamation-triangle" class="h-4 w-4 shrink-0" />
           {@error}
         </div>
       <% end %>
@@ -591,42 +612,430 @@ defmodule RxGeneratorWeb.CoreComponents do
     """
   end
 
+  attr :active, :boolean, default: false
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  defp sig_chip(assigns) do
+    ~H"""
+    <button
+      type="button"
+      aria-pressed={to_string(@active)}
+      class={[
+        "min-h-7 rounded-[3px] border px-2 text-[11px] leading-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#0F4C5C]",
+        @active && "border-[#0F4C5C] bg-[#0F4C5C] text-white",
+        !@active &&
+          "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-500 hover:text-neutral-950"
+      ]}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </button>
+    """
+  end
+
+  defp value_options(current, presets) when is_binary(current) and current != "" do
+    if current in presets, do: presets, else: [current | presets]
+  end
+
+  defp value_options(_current, presets), do: presets
+
+  defp pair_options(current, presets) when is_binary(current) and current != "" do
+    if Enum.any?(presets, &(elem(&1, 0) == current)),
+      do: presets,
+      else: [{current, current} | presets]
+  end
+
+  defp pair_options(_current, presets), do: presets
+
+  defp advice_active?(advice, chip) do
+    chip in String.split(advice || "", "\n", trim: true)
+  end
+
   @doc """
-  Renders the prescription canvas displaying medication items.
+  Renders the interactive prescription editor.
+
+  This pane is a control panel, not a document: it holds patient inputs,
+  clinical notes, medication cards, and advice controls. The printable
+  document is rendered by `a4_paper_preview/1`.
   """
   attr :id, :string, default: "prescription-canvas"
+  attr :items, :list, default: []
+  attr :clinical_warnings, :list, default: []
+  attr :state, :atom, default: :draft
+  attr :draft, :map, default: nil
+
+  def prescription_editor(assigns) do
+    {clinical_findings, general_advice} =
+      RxGenerator.Prescriptions.SmartDefaults.split_clinical_notes_and_advice(
+        assigns[:draft] && assigns[:draft].clinical_notes
+      )
+
+    assigns =
+      assigns
+      |> assign(:clinical_findings, clinical_findings)
+      |> assign(:general_advice, general_advice)
+
+    ~H"""
+    <div id={@id} class="overflow-hidden rounded-[3px] border border-neutral-200 bg-white">
+      <!-- Patient inputs -->
+      <div id="patient-vault-fields" class="border-b border-neutral-200 px-4 py-3">
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-xs font-semibold text-neutral-800">Patient</span>
+          <span class="text-[10px] text-neutral-500">Stored encrypted on this device</span>
+        </div>
+
+        <%= if @state != :locked do %>
+          <form id="patient-vault-form" phx-change="update_patient_vault" novalidate>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label for="patient-name" class="mb-1 block text-[11px] font-medium text-neutral-600">
+                  Name
+                </label>
+                <input
+                  id="patient-name"
+                  type="text"
+                  name="patient_name"
+                  value={(@draft && @draft.patient_name) || ""}
+                  placeholder="e.g. Rahim Uddin"
+                  phx-debounce="300"
+                  class="min-h-9 w-full rounded-[3px] border border-neutral-300 bg-white px-2.5 text-sm text-neutral-950 placeholder:text-neutral-400 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+                />
+              </div>
+              <div>
+                <label for="patient-phone" class="mb-1 block text-[11px] font-medium text-neutral-600">
+                  Phone
+                </label>
+                <input
+                  id="patient-phone"
+                  type="text"
+                  name="patient_phone"
+                  value={(@draft && @draft.patient_phone) || ""}
+                  placeholder="e.g. +880 1712-345678"
+                  phx-debounce="300"
+                  class="min-h-9 w-full rounded-[3px] border border-neutral-300 bg-white px-2.5 font-mono text-sm text-neutral-950 placeholder:text-neutral-400 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+                />
+              </div>
+              <div>
+                <label for="patient-age" class="mb-1 block text-[11px] font-medium text-neutral-600">
+                  Age / Sex
+                </label>
+                <input
+                  id="patient-age"
+                  type="text"
+                  name="patient_age"
+                  value={(@draft && @draft.patient_age) || ""}
+                  placeholder="e.g. 48Y / Male"
+                  phx-debounce="300"
+                  class="min-h-9 w-full rounded-[3px] border border-neutral-300 bg-white px-2.5 text-sm text-neutral-950 placeholder:text-neutral-400 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+                />
+              </div>
+            </div>
+          </form>
+        <% else %>
+          <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-900">
+            <span><span class="text-neutral-500">Name:</span> {(@draft && @draft.patient_name) || "—"}</span>
+            <span><span class="text-neutral-500">Age/Sex:</span> {(@draft && @draft.patient_age) ||
+              "—"}</span>
+            <span :if={@draft && @draft.patient_phone} class="font-mono">
+              <span class="text-neutral-500">Phone:</span> {@draft.patient_phone}
+            </span>
+          </div>
+        <% end %>
+      </div>
+
+      <%= if @clinical_warnings != [] do %>
+        <div
+          id="clinical-warnings-banner"
+          role="status"
+          aria-live="polite"
+          class="mb-5 space-y-2 print:hidden"
+        >
+          <div
+            :for={warning <- @clinical_warnings}
+            class={[
+              "flex items-start gap-2 px-3.5 py-2.5 rounded-[3px] border text-xs font-medium",
+              warning.kind == :duplicate_generic &&
+                "bg-amber-50 border-amber-300 text-amber-900",
+              warning.kind == :controlled_substance &&
+                "bg-rose-50 border-rose-300 text-rose-900"
+            ]}
+          >
+            <.icon name="hero-exclamation-triangle" class="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{warning.message}</span>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Clinical notes + medications -->
+      <div class="grid grid-cols-1 md:grid-cols-12">
+        <!-- 1/3 left: optional clinical notes -->
+        <div
+          id="clinical-left-margin"
+          class="space-y-2 border-b border-neutral-200 px-4 py-4 md:col-span-4 md:border-b-0 md:border-r"
+        >
+          <%= if @state != :locked do %>
+            <div class="flex items-center justify-between">
+              <label for="clinical-notes" class="text-xs font-semibold text-neutral-800">
+                Clinical notes
+              </label>
+              <span class="text-[10px] text-neutral-500">Optional</span>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button
+                :for={prefix <- RxGenerator.Prescriptions.SmartDefaults.clinical_prefixes()}
+                type="button"
+                phx-click="append_clinical_prefix"
+                phx-value-prefix={prefix}
+                class="min-h-8 rounded-[3px] border border-neutral-300 bg-white px-2 font-mono text-[11px] font-medium text-neutral-700 hover:border-[#0F4C5C] hover:text-[#0F4C5C] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#0F4C5C]"
+              >
+                +{prefix}
+              </button>
+            </div>
+            <textarea
+              id="clinical-notes"
+              name="clinical_notes"
+              form="patient-vault-form"
+              rows="10"
+              phx-debounce="300"
+              placeholder="C/C: &#10;O/E: &#10;Dx: "
+              class="min-h-[220px] w-full rounded-[3px] border border-neutral-300 bg-white px-2.5 py-2 font-mono text-sm text-neutral-950 placeholder:text-neutral-400 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+            >{@clinical_findings}</textarea>
+            <p class="text-[11px] leading-snug text-neutral-500">
+              Leave blank to keep this margin free for handwriting on the printed sheet.
+            </p>
+          <% else %>
+            <%= if String.trim(@clinical_findings || "") != "" do %>
+              <div class="whitespace-pre-line text-sm leading-relaxed text-neutral-950">
+                {@clinical_findings}
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+
+        <!-- 2/3 right: medications -->
+        <div id="clinical-right-rx-column" class="px-4 py-4 md:col-span-8">
+          <div class="mb-3 flex items-baseline justify-between">
+            <span class="text-sm font-semibold text-neutral-950">Medications</span>
+            <span class="font-mono text-xs text-neutral-500">{length(@items)}</span>
+          </div>
+
+          <%= if @items == [] do %>
+            <div class="rounded-[3px] border border-dashed border-neutral-300 px-4 py-10 text-center">
+              <p class="text-sm font-medium text-neutral-700">No medications yet</p>
+              <p class="mt-1 text-xs text-neutral-500">
+                Type in the omnibar above, e.g. <span class="font-mono text-neutral-700">napa 1+0+1 5d pc</span>.
+              </p>
+            </div>
+          <% else %>
+            <ol class="space-y-2">
+              <li
+                :for={{item, index} <- Enum.with_index(@items)}
+                id={"rx-item-#{index}"}
+                class="rx-item-row rounded-[3px] border border-neutral-200 bg-white"
+              >
+                <div class="flex items-start justify-between gap-3 px-3 py-2.5">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-baseline gap-x-2">
+                      <span class="font-mono text-xs text-neutral-500">{index + 1}.</span>
+                      <span class="generic-name-print text-sm font-black uppercase tracking-wide text-neutral-950">
+                        {String.upcase(item.generic_name_snapshot)}
+                      </span>
+                      <span class="brand-name-print text-sm text-neutral-700">
+                        ({item.brand_name_snapshot})
+                      </span>
+                      <span class="font-mono text-[11px] text-neutral-500">
+                        {item.dosage_form_snapshot} &middot; {item.strength_snapshot}
+                      </span>
+                      <span
+                        :if={item.is_controlled_snapshot}
+                        class="rounded-[2px] border border-rose-300 bg-rose-50 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-rose-800"
+                      >
+                        Controlled
+                      </span>
+                    </div>
+                    <p class="mt-1 text-sm leading-snug text-neutral-950">
+                      {item.canonical_bengali_text ||
+                        "#{item.dosage_matrix} — #{item.duration_expression}"}
+                    </p>
+                    <p :if={item.bengali_breakdown_text} class="text-[11px] text-neutral-500">
+                      {item.bengali_breakdown_text}
+                    </p>
+                  </div>
+                  <button
+                    :if={@state != :locked}
+                    type="button"
+                    id={"remove-item-#{index}"}
+                    phx-click="remove_prescription_item"
+                    phx-value-item_id={item.id}
+                    aria-label={"Remove #{item.brand_name_snapshot}"}
+                    class="-mr-1 flex size-9 shrink-0 items-center justify-center rounded-[3px] text-neutral-400 hover:bg-neutral-100 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#0F4C5C]"
+                  >
+                    <.icon name="hero-x-mark" class="size-4" />
+                  </button>
+                </div>
+
+                <%= if @state != :locked do %>
+                  <% {active_timing, active_note} =
+                    RxGenerator.Prescriptions.SmartDefaults.split_timing_and_note(
+                      item.timing_instruction
+                    ) %>
+                  <div class="space-y-1.5 border-t border-neutral-200 px-3 py-2.5">
+                    <div class="flex flex-wrap items-center gap-1">
+                      <span class="w-16 shrink-0 text-[11px] font-medium text-neutral-500">
+                        Dose
+                      </span>
+                      <.sig_chip
+                        :for={
+                          dose <-
+                            value_options(
+                              item.dosage_matrix,
+                              RxGenerator.Prescriptions.SmartDefaults.dose_presets()
+                            )
+                        }
+                        active={item.dosage_matrix == dose}
+                        phx-click="update_item_sig"
+                        phx-value-item_id={item.id}
+                        phx-value-dosage_matrix={dose}
+                        class="font-mono"
+                      >
+                        {dose}
+                      </.sig_chip>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1">
+                      <span class="w-16 shrink-0 text-[11px] font-medium text-neutral-500">
+                        Timing
+                      </span>
+                      <.sig_chip
+                        :for={
+                          {code, label} <-
+                            pair_options(
+                              active_timing,
+                              RxGenerator.Prescriptions.SmartDefaults.timing_presets()
+                            )
+                        }
+                        active={active_timing == code}
+                        phx-click="update_item_sig"
+                        phx-value-item_id={item.id}
+                        phx-value-timing_code={code}
+                      >
+                        {label}
+                      </.sig_chip>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1">
+                      <span class="w-16 shrink-0 text-[11px] font-medium text-neutral-500">
+                        Duration
+                      </span>
+                      <.sig_chip
+                        :for={
+                          {dur_val, dur_label} <-
+                            pair_options(
+                              item.duration_expression,
+                              RxGenerator.Prescriptions.SmartDefaults.duration_presets()
+                            )
+                        }
+                        active={item.duration_expression == dur_val}
+                        phx-click="update_item_sig"
+                        phx-value-item_id={item.id}
+                        phx-value-duration_expression={dur_val}
+                        class="font-mono"
+                      >
+                        {dur_label}
+                      </.sig_chip>
+                    </div>
+
+                    <form
+                      id={"item-note-form-#{index}"}
+                      phx-change="update_item_sig"
+                      phx-submit="update_item_sig"
+                      novalidate
+                      class="flex items-center gap-2 pt-0.5"
+                    >
+                      <input type="hidden" name="item_id" value={item.id} />
+                      <label for={"item-note-#{index}"} class="sr-only">
+                        Note for {item.brand_name_snapshot}
+                      </label>
+                      <input
+                        id={"item-note-#{index}"}
+                        type="text"
+                        name="custom_note"
+                        value={active_note}
+                        phx-debounce="300"
+                        placeholder="Note — e.g. with warm water"
+                        class="min-h-8 w-full rounded-[3px] border border-neutral-300 bg-white px-2 text-sm text-neutral-950 placeholder:text-neutral-400 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+                      />
+                    </form>
+                  </div>
+                <% end %>
+              </li>
+            </ol>
+          <% end %>
+
+          <!-- General advice -->
+          <div id="general-advice-section" class="mt-4 border-t border-neutral-200 pt-3">
+            <div class="mb-1.5 flex items-baseline justify-between">
+              <label for="general-advice" class="text-xs font-semibold text-neutral-800">
+                Advice
+              </label>
+              <span class="text-[10px] text-neutral-500">পরামর্শ</span>
+            </div>
+            <%= if @state != :locked do %>
+              <div class="mb-2 flex flex-wrap gap-1">
+                <.sig_chip
+                  :for={chip <- RxGenerator.Prescriptions.SmartDefaults.advice_chips()}
+                  active={advice_active?(@general_advice, chip)}
+                  phx-click="toggle_advice_chip"
+                  phx-value-advice={chip}
+                >
+                  {chip}
+                </.sig_chip>
+              </div>
+              <textarea
+                id="general-advice"
+                name="general_advice"
+                form="patient-vault-form"
+                rows="2"
+                phx-debounce="300"
+                placeholder="Or type custom advice…"
+                class="min-h-16 w-full rounded-[3px] border border-neutral-300 bg-white px-2.5 py-1.5 text-sm text-neutral-950 placeholder:text-neutral-400 focus:border-[#0F4C5C] focus:outline-none focus:ring-1 focus:ring-[#0F4C5C]"
+              >{@general_advice}</textarea>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders the printed A4 prescription sheet.
+  """
+  attr :id, :string, default: "a4-paper-preview"
   attr :items, :list, default: []
   attr :state, :atom, default: :draft
   attr :rx_number, :string, default: nil
   attr :prescriber, :map, default: nil
-  attr :chambers, :list, default: []
   attr :active_chamber, :map, default: nil
   attr :draft, :map, default: nil
-  attr :prescriber_bmdc_no, :string, default: nil
   attr :qr_svg, :string, default: nil
-  attr :"phx-hook", :string, default: nil
 
-  def prescription_canvas(assigns) do
-    # Resolve prescriber info from prescriber struct or draft snapshot
+  def a4_paper_preview(assigns) do
     doctor_name =
       (assigns[:prescriber] && assigns[:prescriber].name) ||
-        (assigns[:draft] && assigns[:draft].prescriber_name) ||
-        "Dr. Tariqul Islam"
+        (assigns[:draft] && assigns[:draft].prescriber_name)
 
     bmdc_no =
       (assigns[:prescriber] && assigns[:prescriber].bmdc_no) ||
-        (assigns[:draft] && assigns[:draft].prescriber_bmdc_no) ||
-        assigns[:prescriber_bmdc_no] ||
-        "A-12345"
+        (assigns[:draft] && assigns[:draft].prescriber_bmdc_no)
 
     qualifications =
       (assigns[:prescriber] && assigns[:prescriber].qualifications) ||
-        (assigns[:draft] && assigns[:draft].prescriber_qualifications) ||
-        "MBBS (DMC), FCPS"
+        (assigns[:draft] && assigns[:draft].prescriber_qualifications)
 
     specialty = assigns[:prescriber] && assigns[:prescriber].specialty
 
-    # Resolve chamber info from active_chamber or draft snapshot
     ch_name =
       (assigns[:active_chamber] && assigns[:active_chamber].chamber_name) ||
         (assigns[:draft] && assigns[:draft].chamber_name)
@@ -643,6 +1052,18 @@ defmodule RxGeneratorWeb.CoreComponents do
       (assigns[:active_chamber] && assigns[:active_chamber].contact_phone) ||
         (assigns[:draft] && assigns[:draft].chamber_phone)
 
+    {clinical_findings, general_advice} =
+      RxGenerator.Prescriptions.SmartDefaults.split_clinical_notes_and_advice(
+        assigns[:draft] && assigns[:draft].clinical_notes
+      )
+
+    rx_date =
+      case assigns[:draft] && assigns[:draft].finalized_at do
+        %DateTime{} = dt -> Calendar.strftime(dt, "%d %b %Y")
+        %NaiveDateTime{} = dt -> Calendar.strftime(dt, "%d %b %Y")
+        _ -> Calendar.strftime(Date.utc_today(), "%d %b %Y")
+      end
+
     assigns =
       assigns
       |> assign(:doctor_name, doctor_name)
@@ -653,368 +1074,191 @@ defmodule RxGeneratorWeb.CoreComponents do
       |> assign(:ch_address, ch_address)
       |> assign(:ch_schedule, ch_schedule)
       |> assign(:ch_phone, ch_phone)
+      |> assign(:clinical_findings, clinical_findings)
+      |> assign(:general_advice, general_advice)
+      |> assign(:rx_date, rx_date)
 
     ~H"""
-    <div
+    <section
       id={@id}
-      phx-hook={assigns[:"phx-hook"]}
-      class="w-full max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-8 min-h-100"
+      aria-label="Prescription sheet"
+      phx-hook="PrintPrescription"
+      class="a4-sheet mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col border border-neutral-200 bg-white p-[12mm] text-neutral-950 print:m-0 print:w-auto print:max-w-none print:border-0"
     >
-      <!-- Prescriber & Chamber Header Banner -->
-      <div class="border-b-2 border-zinc-900 pb-5 mb-6">
-        <div
-          id="prescription-header-banner"
-          class="print-two-col-header flex flex-col sm:flex-row justify-between items-start gap-4"
-        >
-          <!-- Doctor Credentials (Left) -->
-          <div class="space-y-1">
-            <h1 id="canvas-prescriber-name" class="text-2xl font-black text-zinc-900 tracking-tight">
-              {@doctor_name}
-            </h1>
-            <p id="canvas-prescriber-qualifications" class="text-xs font-semibold text-zinc-700">
-              {@qualifications} {if @specialty, do: "• #{@specialty}"}
-            </p>
-            <p class="text-xs text-zinc-500">
-              BM&DC Reg. No:
-              <span id="canvas-prescriber-bmdc" class="font-mono font-bold text-zinc-900">
-                {@bmdc_no}
-              </span>
-            </p>
-          </div>
-
-          <!-- Chamber Banner (Right) -->
-          <div class="sm:text-right space-y-1 sm:max-w-xs">
-            <%= if @ch_name do %>
-              <h3 id="canvas-chamber-name" class="text-base font-bold text-zinc-900">
-                {@ch_name}
-              </h3>
-              <p id="canvas-chamber-address" class="text-xs text-zinc-600">
-                {@ch_address}
-              </p>
-              <%= if @ch_schedule do %>
-                <p class="text-[11px] text-zinc-500">
-                  Hours:
-                  <span id="canvas-chamber-schedule" class="font-medium text-zinc-700">
-                    {@ch_schedule}
-                  </span>
-                </p>
-              <% end %>
-              <%= if @ch_phone do %>
-                <p class="text-[11px] text-zinc-500">
-                  Tel:
-                  <span id="canvas-chamber-phone" class="font-mono font-medium text-zinc-700">
-                    {@ch_phone}
-                  </span>
-                </p>
-              <% end %>
-            <% else %>
-              <div class="text-xs text-zinc-400 italic">No chamber selected</div>
-            <% end %>
-          </div>
-        </div>
-
-        <!-- Chamber Switcher Controls (Hidden on Print & Locked) -->
-        <%= if @chambers != [] && @state != :locked do %>
-          <div
-            id="chamber-switcher"
-            class="mt-4 pt-3 border-t border-zinc-100 flex flex-wrap items-center gap-2 print:hidden"
-          >
-            <span class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mr-1">
-              Active Chamber:
+      <!-- Letterhead -->
+      <header
+        id="prescription-header-banner"
+        class="print-two-col-header flex items-start justify-between gap-6 border-b-2 border-neutral-900 pb-3"
+      >
+        <div class="min-w-0">
+          <p id="canvas-prescriber-name" class="text-lg font-bold leading-tight">
+            {@doctor_name || "Prescriber not configured"}
+          </p>
+          <p id="canvas-prescriber-qualifications" class="mt-0.5 text-[12px] text-neutral-700">
+            {@qualifications || "Add qualifications in Settings"}
+            <span :if={@specialty}>
+              &middot; {@specialty}
             </span>
-            <div class="flex flex-wrap gap-1.5" id="chamber-select-dropdown">
-              <%= for chamber <- @chambers do %>
-                <button
-                  type="button"
-                  phx-click="switch_chamber"
-                  phx-value-chamber_id={chamber.id}
-                  class={[
-                    "px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer",
-                    if(@active_chamber && @active_chamber.id == chamber.id,
-                      do:
-                        "bg-zinc-900 text-white shadow-sm ring-2 ring-zinc-900 ring-offset-1 font-bold",
-                      else: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                    )
-                  ]}
-                >
-                  {chamber.chamber_name}
-                </button>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-      </div>
-
-      <!-- Prescription Status & Metadata Bar -->
-      <div class="border-b border-zinc-200 pb-3 mb-6 flex justify-between items-center">
-        <div>
-          <div class="flex items-center gap-3">
-            <h2 class="text-xl font-black text-zinc-900 tracking-tight">PRESCRIPTION (Rx)</h2>
-            <%= if @state == :locked do %>
-              <span
-                id="prescription-locked-badge"
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300"
-              >
-                <.icon name="hero-lock-closed" class="w-3.5 h-3.5" /> FINALIZED & IMMUTABLE
-              </span>
-            <% else %>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
-                DRAFT
-              </span>
-            <% end %>
-          </div>
-          <p class="text-xs font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
-            Clinical Order Record {if @rx_number, do: "• #{@rx_number}"}
+          </p>
+          <p :if={@doctor_name && @bmdc_no} class="mt-0.5 font-mono text-[11px] text-neutral-700">
+            BM&amp;DC: <span id="canvas-prescriber-bmdc">{@bmdc_no}</span>
           </p>
         </div>
-        <div class="text-right text-xs text-zinc-400">
-          Edge-Native Air-Gapped Engine
-        </div>
-      </div>
-
-      <!-- Patient Data Vault Section (Encrypted at Rest) -->
-      <div
-        id="patient-vault-fields"
-        class="bg-zinc-50/70 border border-zinc-200/80 rounded-xl p-4 mb-6 transition-all"
-      >
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
-            <.icon name="hero-shield-check" class="w-4 h-4 text-emerald-600" />
-            Patient Data Vault (Encrypted AES-256-GCM)
-          </span>
-          <span class="text-[10px] text-zinc-400 uppercase tracking-widest">
-            Protected Health Information (PHI)
-          </span>
-        </div>
-
-        <%= if @state != :locked do %>
-          <form id="patient-vault-form" phx-change="update_patient_vault" class="space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
-                  Patient Name
-                </label>
-                <input
-                  type="text"
-                  name="patient_name"
-                  value={(@draft && @draft.patient_name) || ""}
-                  placeholder="e.g. Rahim Uddin"
-                  phx-debounce="300"
-                  class="w-full text-xs rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
-                />
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
-                  Contact Phone
-                </label>
-                <input
-                  type="text"
-                  name="patient_phone"
-                  value={(@draft && @draft.patient_phone) || ""}
-                  placeholder="e.g. +880 1712-345678"
-                  phx-debounce="300"
-                  class="w-full text-xs font-mono rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
-                />
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
-                  Age / Gender
-                </label>
-                <input
-                  type="text"
-                  name="patient_age"
-                  value={(@draft && @draft.patient_age) || ""}
-                  placeholder="e.g. 48Y / Male"
-                  phx-debounce="300"
-                  class="w-full text-xs rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
-                />
-              </div>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-zinc-600 mb-1">
-                Clinical Notes / History
-              </label>
-              <input
-                type="text"
-                name="clinical_notes"
-                value={(@draft && @draft.clinical_notes) || ""}
-                placeholder="Chief complaints, diagnosis notes, or allergy alerts..."
-                phx-debounce="300"
-                class="w-full text-xs rounded-lg border border-zinc-300 px-3 py-1.5 focus:border-zinc-800 focus:ring-1 focus:ring-zinc-800 bg-white"
-              />
-            </div>
-          </form>
-        <% else %>
-          <div class="space-y-2 text-xs">
-            <div class="flex flex-wrap gap-4 text-zinc-800">
-              <span><strong>Patient:</strong> {(@draft && @draft.patient_name) || "Walk-in"}</span>
-              <%= if @draft && @draft.patient_phone do %>
-                <span><strong>Phone:</strong> {@draft.patient_phone}</span>
-              <% end %>
-              <%= if @draft && @draft.patient_age do %>
-                <span><strong>Age:</strong> {@draft.patient_age}</span>
-              <% end %>
-            </div>
-            <%= if @draft && @draft.clinical_notes do %>
-              <p class="text-zinc-600 border-t border-zinc-200/60 pt-1.5 text-[11px]">
-                <strong>Clinical Notes:</strong> {@draft.clinical_notes}
-              </p>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-
-      <div class="space-y-4">
-        <%= if @items == [] do %>
-          <div class="text-center py-16 text-zinc-400 border-2 border-dashed border-zinc-200 rounded-xl">
-            <.icon name="hero-document-text" class="w-10 h-10 mx-auto mb-2 text-zinc-300" />
-            <p class="text-sm font-medium">No medications added yet.</p>
-            <p class="text-xs mt-1">
-              Use the omnibar above to enter medications via keyboard shorthand.
+        <div class="max-w-[46%] shrink-0 text-right">
+          <%= if @ch_name do %>
+            <p id="canvas-chamber-name" class="text-[13px] font-semibold">{@ch_name}</p>
+            <p id="canvas-chamber-address" class="text-[11px] leading-snug text-neutral-600">
+              {@ch_address}
             </p>
-          </div>
-        <% else %>
-          <div
-            :for={{item, index} <- Enum.with_index(@items)}
-            id={"rx-item-#{index}"}
-            class="rx-item-row p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors"
-          >
-            <div class="flex items-baseline justify-between">
-              <div>
-                <span class="text-xs font-bold text-zinc-400 mr-2">{index + 1}.</span>
-                <span class="generic-name-print text-lg font-black uppercase tracking-wide text-zinc-900">
+            <p :if={@ch_schedule} id="canvas-chamber-schedule" class="text-[11px] text-neutral-600">
+              {@ch_schedule}
+            </p>
+            <p
+              :if={@ch_phone}
+              id="canvas-chamber-phone"
+              class="font-mono text-[11px] text-neutral-600"
+            >
+              {@ch_phone}
+            </p>
+          <% else %>
+            <p class="text-[11px] italic text-neutral-500">Select a chamber above</p>
+          <% end %>
+        </div>
+      </header>
+
+      <!-- Patient line -->
+      <div class="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-neutral-300 pb-2 text-[12px]">
+        <span>
+          <span class="text-neutral-500">Patient</span>
+          <span class="font-semibold">{(@draft && @draft.patient_name) || "Walk-in"}</span>
+        </span>
+        <span :if={@draft && @draft.patient_age}>
+          <span class="text-neutral-500">Age/Sex</span> {@draft.patient_age}
+        </span>
+        <span :if={@draft && @draft.patient_phone} class="font-mono">
+          <span class="text-neutral-500">Phone</span> {@draft.patient_phone}
+        </span>
+        <span><span class="text-neutral-500">Date</span> {@rx_date}</span>
+        <span class="font-mono">
+          <span class="text-neutral-500">Rx</span> {@rx_number || "Unnumbered draft"}
+        </span>
+      </div>
+
+      <!-- Clinical margin + Rx column -->
+      <div class="mt-4 grid flex-1 grid-cols-12 gap-4">
+        <div
+          id="preview-left-margin"
+          class="col-span-4 border-r border-neutral-300 pr-3 text-[11.5px] leading-relaxed"
+        >
+          <p class="mb-1 text-[10px] font-semibold text-neutral-400">Clinical notes</p>
+          <%= if String.trim(@clinical_findings || "") != "" do %>
+            <div class="whitespace-pre-line">{@clinical_findings}</div>
+          <% end %>
+        </div>
+
+        <div id="preview-right-rx-column" class="col-span-8 flex flex-col">
+          <p class="font-serif text-xl leading-none">&#8478;</p>
+          <ol class="mt-2 space-y-3">
+            <li :for={{item, idx} <- Enum.with_index(@items)} class="rx-item-row">
+              <div class="flex flex-wrap items-baseline gap-x-1.5 text-[12px]">
+                <span class="font-mono text-neutral-500">{idx + 1}.</span>
+                <span class="generic-name-print text-[12.5px] font-black uppercase tracking-wide text-neutral-950">
                   {String.upcase(item.generic_name_snapshot)}
                 </span>
-                <span class="brand-name-print ml-2 text-sm font-semibold text-zinc-600">
-                  ({item.brand_name_snapshot})
+                <span class="brand-name-print text-neutral-700">({item.brand_name_snapshot})</span>
+                <span class="text-[10px] text-neutral-500">
+                  {item.dosage_form_snapshot} &middot; {item.strength_snapshot}
                 </span>
               </div>
-              <span class="text-xs font-medium text-zinc-500 bg-zinc-200/70 px-2.5 py-0.5 rounded-full">
-                {item.dosage_form_snapshot} &bull; {item.strength_snapshot}
-              </span>
-            </div>
+              <p class="pl-4 pt-0.5 text-[12px] font-semibold text-neutral-900">
+                {item.canonical_bengali_text || "#{item.dosage_matrix} — #{item.duration_expression}"}
+              </p>
+              <p :if={item.bengali_breakdown_text} class="pl-4 text-[10.5px] text-neutral-600">
+                {item.bengali_breakdown_text}
+              </p>
+            </li>
+          </ol>
+          <p :if={@items == []} class="mt-2 text-[11px] italic text-neutral-400">
+            No medications prescribed.
+          </p>
 
-            <div class="mt-3 flex flex-wrap items-baseline gap-3">
-              <%= if item.canonical_bengali_text do %>
-                <span class="text-base font-bold text-emerald-800 tracking-wide">
-                  {item.canonical_bengali_text}
-                </span>
-              <% else %>
-                <span class="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-sm font-semibold text-emerald-800">
-                  {item.dosage_matrix}
-                </span>
-                <span class="text-zinc-400">&bull;</span>
-                <span class="text-sm font-semibold text-emerald-800">{item.duration_expression}</span>
-                <%= if item.timing_instruction do %>
-                  <span class="text-zinc-400">&bull;</span>
-                  <span class="text-zinc-600 font-medium text-sm">({item.timing_instruction})</span>
-                <% end %>
-              <% end %>
-
-              <%= if item.bengali_breakdown_text do %>
-                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
-                  {item.bengali_breakdown_text}
-                </span>
-              <% end %>
+          <div
+            :if={String.trim(@general_advice || "") != ""}
+            id="preview-advice-section"
+            class="mt-auto pt-4"
+          >
+            <div class="border-t border-neutral-300 pt-2">
+              <p class="text-[10px] font-semibold text-neutral-500">পরামর্শ / Advice</p>
+              <p class="mt-0.5 whitespace-pre-line text-[11.5px] text-neutral-900">
+                {@general_advice}
+              </p>
             </div>
           </div>
-        <% end %>
+        </div>
       </div>
 
-      <!-- Verification Seal Footer (Visible in Locked Print & Screen) -->
-      <%= if @state == :locked && @qr_svg do %>
-        <div
-          id="print-verification-seal"
-          class="mt-8 pt-6 border-t border-zinc-200 hidden print:flex items-center justify-between"
-        >
-          <div class="flex items-center gap-4">
+      <!-- Signature + seal -->
+      <footer class="mt-4 flex items-end justify-between gap-6 border-t border-neutral-900 pt-3">
+        <div>
+          <%= if @state == :locked && @qr_svg do %>
+            <div class="flex items-end gap-2">
+              <div
+                id="prescription-qr-code"
+                class="h-16 w-16 border border-neutral-900 p-0.5 [&>svg]:h-full [&>svg]:w-full"
+              >
+                {Phoenix.HTML.raw(@qr_svg)}
+              </div>
+              <p class="pb-0.5 text-[9px] leading-tight text-neutral-500">
+                Tamper-Evident Ed25519 Seal<br />Scan to verify offline.
+              </p>
+            </div>
+          <% else %>
             <div
-              id="print-qr-seal-container"
-              class="qr-seal-print w-20 h-20 p-1 bg-white border border-zinc-300 rounded-lg flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full"
+              id="qr-seal-placeholder"
+              class="flex h-14 w-20 items-center justify-center border border-dashed border-neutral-400 px-2 text-center font-mono text-[8.5px] leading-tight text-neutral-500"
             >
-              {Phoenix.HTML.raw(@qr_svg)}
+              Seal applied on finalization
             </div>
-            <div class="space-y-0.5">
-              <p class="text-xs font-bold text-zinc-900">
-                Official Digital Verification Seal
-              </p>
-              <p class="text-[11px] text-zinc-600 font-mono">
-                BM&DC: {@bmdc_no}
-              </p>
-              <p class="text-[10px] text-zinc-500">
-                Digitally signed with Ed25519 &bull; Verifiable offline via 2D Barcode
-              </p>
-            </div>
-          </div>
-          <div class="text-right text-[10px] text-zinc-400">
-            High Court Generics Compliant<br /> RxGenerator Edge Engine
-          </div>
+          <% end %>
         </div>
-      <% end %>
-
-      <div class="mt-8 pt-6 border-t border-zinc-200 flex justify-between items-center print:hidden">
-        <div>
-          <%= if @state == :locked do %>
-            <div class="flex items-center gap-4">
-              <%= if @qr_svg do %>
-                <div
-                  id="prescription-qr-code"
-                  class="w-24 h-24 p-1.5 bg-white border border-zinc-200 rounded-xl shadow-inner flex items-center justify-center shrink-0 [&>svg]:w-full [&>svg]:h-full"
-                >
-                  {Phoenix.HTML.raw(@qr_svg)}
-                </div>
-              <% end %>
-              <div class="space-y-1">
-                <p class="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
-                  <.icon name="hero-shield-check" class="w-4 h-4 text-emerald-600" />
-                  Tamper-Evident Ed25519 Seal
-                </p>
-                <p class="text-[11px] text-zinc-500">
-                  Prescriber BM&DC:
-                  <span class="font-mono font-semibold text-zinc-700">{@prescriber_bmdc_no ||
-                    "A-12345"}</span>
-                </p>
-                <p class="text-[10px] text-zinc-400">
-                  Air-gapped verification against local registry snapshot.
-                </p>
-              </div>
-            </div>
-          <% else %>
-            <p class="text-xs text-zinc-500">
-              Review medications carefully before sealing prescription.
+        <div class="text-right">
+          <div class="w-44 border-t border-neutral-900 pt-1">
+            <p class="text-[12px] font-semibold">{@doctor_name || "—"}</p>
+            <p :if={@doctor_name && @bmdc_no} class="font-mono text-[10px] text-neutral-600">
+              BM&amp;DC {@bmdc_no}
             </p>
-          <% end %>
+            <p class="text-[9px] text-neutral-500">Signature</p>
+          </div>
         </div>
-        <div>
-          <%= if @state == :locked do %>
-            <button
-              id="print-prescription-btn"
-              type="button"
-              phx-click="trigger_print"
-              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm transition-all cursor-pointer"
-            >
-              <.icon name="hero-printer" class="w-4 h-4" /> Print Prescription
-            </button>
-          <% else %>
-            <button
-              id="finalize-prescription-btn"
-              type="button"
-              phx-click="finalize_prescription"
-              disabled={@items == []}
-              class={[
-                "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm shadow-sm transition-all",
-                if(@items == [],
-                  do: "bg-zinc-200 text-zinc-400 cursor-not-allowed",
-                  else: "bg-zinc-900 text-white hover:bg-zinc-800 active:scale-95 cursor-pointer"
-                )
-              ]}
-            >
-              <.icon name="hero-lock-closed" class="w-4 h-4" /> Finalize Prescription
-            </button>
-          <% end %>
+      </footer>
+
+      <div
+        :if={@state == :locked && @qr_svg}
+        id="print-verification-seal"
+        class="hidden print:flex mt-2 items-center justify-between gap-4 border-t border-neutral-300 pt-2"
+      >
+        <div class="flex items-center gap-2">
+          <div
+            id="print-qr-seal-container"
+            class="qr-seal-print h-12 w-12 bg-white [&>svg]:h-full [&>svg]:w-full"
+          >
+            {Phoenix.HTML.raw(@qr_svg)}
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-neutral-900">
+              Official Digital Verification Seal
+            </p>
+            <p :if={@doctor_name && @bmdc_no} class="font-mono text-[9px] text-neutral-600">
+              BM&amp;DC: {@bmdc_no}
+            </p>
+            <p class="text-[9px] text-neutral-500">
+              Digitally signed (Ed25519) &middot; High Court generics compliant
+            </p>
+          </div>
         </div>
+        <p class="text-[9px] text-neutral-500">Page 1 of 1</p>
       </div>
-    </div>
+    </section>
     """
   end
 end

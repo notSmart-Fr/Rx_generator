@@ -14,6 +14,7 @@ defmodule RxGenerator.Prescriptions do
   alias RxGenerator.Prescriptions.PrescriberProfile
   alias RxGenerator.Prescriptions.Prescription
   alias RxGenerator.Prescriptions.PrescriptionItem
+  alias RxGenerator.Prescriptions.SmartDefaults
 
   resources do
     resource PrescriberProfile do
@@ -175,7 +176,7 @@ defmodule RxGenerator.Prescriptions do
       )
       |> Map.put_new(
         :prescriber_bmdc_no,
-        (active_prescriber && active_prescriber.bmdc_no) || "A-12345"
+        active_prescriber && active_prescriber.bmdc_no
       )
       |> Map.put_new(
         :prescriber_name,
@@ -226,7 +227,9 @@ defmodule RxGenerator.Prescriptions do
       ) do
     dosage_matrix_str = to_string(Map.get(parsed_shorthand, :dosage_matrix, "1+0+1"))
     duration_str = to_string(Map.get(parsed_shorthand, :duration_expression, "7 days"))
-    timing_str = parsed_shorthand[:timing_code] || parsed_shorthand[:timing_instruction]
+    raw_timing = parsed_shorthand[:timing_code] || parsed_shorthand[:timing_instruction]
+    special_note = parsed_shorthand[:special_instruction] || parsed_shorthand[:custom_note]
+    timing_str = SmartDefaults.combine_timing_and_note(raw_timing, special_note)
 
     canonical_bengali =
       BengaliTranslator.to_canonical(
@@ -248,7 +251,7 @@ defmodule RxGenerator.Prescriptions do
       is_controlled_snapshot: drug.is_controlled || false,
       dosage_matrix: dosage_matrix_str,
       duration_expression: duration_str,
-      timing_instruction: timing_str && to_string(timing_str),
+      timing_instruction: timing_str,
       canonical_bengali_text: canonical_bengali,
       bengali_breakdown_text: bengali_breakdown,
       display_order: display_order
@@ -257,6 +260,61 @@ defmodule RxGenerator.Prescriptions do
     PrescriptionItem
     |> Ash.Changeset.for_create(:create, attrs)
     |> Ash.create()
+  end
+
+  @doc """
+  Updates the dosage matrix, duration, timing code, or custom note on a draft prescription item,
+  recomputing the canonical Bengali directions.
+  """
+  def update_item_sig(item_id, attrs) when is_binary(item_id) and is_map(attrs) do
+    case Ash.get(PrescriptionItem, item_id) do
+      {:ok, item} ->
+        dosage_matrix =
+          Map.get(attrs, :dosage_matrix) || Map.get(attrs, "dosage_matrix") || item.dosage_matrix
+
+        raw_duration =
+          Map.get(attrs, :duration_expression) ||
+            Map.get(attrs, "duration_expression") || item.duration_expression
+
+        duration_expression = normalize_duration_token(raw_duration)
+
+        {existing_timing, existing_note} =
+          SmartDefaults.split_timing_and_note(item.timing_instruction)
+
+        new_timing =
+          cond do
+            Map.has_key?(attrs, :timing_code) -> Map.get(attrs, :timing_code)
+            Map.has_key?(attrs, "timing_code") -> Map.get(attrs, "timing_code")
+            true -> existing_timing
+          end
+
+        new_note =
+          cond do
+            Map.has_key?(attrs, :custom_note) -> Map.get(attrs, :custom_note)
+            Map.has_key?(attrs, "custom_note") -> Map.get(attrs, "custom_note")
+            true -> existing_note
+          end
+
+        timing_str = SmartDefaults.combine_timing_and_note(new_timing, new_note)
+
+        canonical_bengali =
+          BengaliTranslator.to_canonical(dosage_matrix, duration_expression, timing_str)
+
+        bengali_breakdown = BengaliTranslator.to_breakdown(dosage_matrix)
+
+        item
+        |> Ash.Changeset.for_update(:update, %{
+          dosage_matrix: to_string(dosage_matrix),
+          duration_expression: to_string(duration_expression),
+          timing_instruction: timing_str,
+          canonical_bengali_text: canonical_bengali,
+          bengali_breakdown_text: bengali_breakdown
+        })
+        |> Ash.update()
+
+      {:error, err} ->
+        {:error, err}
+    end
   end
 
   @doc """
@@ -388,6 +446,24 @@ defmodule RxGenerator.Prescriptions do
   def verify_prescription_payload(payload) when is_binary(payload) do
     Crypto.verify_qr_payload(payload)
   end
+
+  defp normalize_duration_token(val) when is_binary(val) do
+    trimmed = String.trim(val)
+
+    cond do
+      String.downcase(trimmed) in ["cont", "continue"] ->
+        "continue"
+
+      Regex.match?(~r/^(\d+)d$/i, trimmed) ->
+        [_, days] = Regex.run(~r/^(\d+)d$/i, trimmed)
+        "#{days} days"
+
+      true ->
+        trimmed
+    end
+  end
+
+  defp normalize_duration_token(other), do: to_string(other)
 
   defp generate_rx_number do
     date_part = Date.utc_today() |> Date.to_iso8601() |> String.replace("-", "")

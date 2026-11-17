@@ -46,7 +46,8 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
     if trimmed == "" do
       nil
     else
-      tokens = String.split(trimmed, ~r/\s+/, trim: true)
+      {main_input, special_instruction} = split_special_instruction(trimmed)
+      tokens = String.split(main_input, ~r/\s+/, trim: true)
 
       # 1. Extract dosage form prefix from beginning if present (e.g., "syrup tofen ...")
       {form_hint, tokens_after_form} = extract_form_prefix(tokens)
@@ -79,8 +80,25 @@ defmodule RxGenerator.Prescriptions.ShorthandParser do
         dosage_matrix: dosage_matrix || :as_directed,
         duration_expression: duration_expr || :as_needed,
         timing_code: timing_code,
-        special_instruction: nil
+        special_instruction: special_instruction
       }
+    end
+  end
+
+  defp split_special_instruction(input) do
+    cond do
+      String.contains?(input, " -- ") ->
+        [main, note] = String.split(input, " -- ", parts: 2)
+        trimmed_note = String.trim(note)
+        {String.trim(main), if(trimmed_note == "", do: nil, else: trimmed_note)}
+
+      String.contains?(input, ";") ->
+        [main, note] = String.split(input, ";", parts: 2)
+        trimmed_note = String.trim(note)
+        {String.trim(main), if(trimmed_note == "", do: nil, else: trimmed_note)}
+
+      true ->
+        {input, nil}
     end
   end
 
